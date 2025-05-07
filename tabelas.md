@@ -35,7 +35,6 @@ tipo {
 ### jogadores
 id
 id_esportes
-id_pontuação
 id_scouts
 nome
 cpf
@@ -111,8 +110,15 @@ descrição
 quantidadequadras
 criadoem
 
-### grupos
+### participantes (para saber todos os jogadores q estão inscritos no torneio e as devidas categorias)
 id
+id_torneios
+id_jogadores
+id_categorias
+
+### grupos (mínimo 2 e máximo 5 jogadores)
+id
+id_categoria
 name (a, b, c, ou 1, 2, 3)
 id_jogador1
 id_jogador2
@@ -148,6 +154,7 @@ perdedor (jogador1)
 id
 id_players
 id_esporte
+id_torneios
 vitorias
 derrotas
 pontos

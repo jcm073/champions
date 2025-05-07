@@ -1,0 +1,200 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity usuarios {
+  * id : int <<PK>>
+  --
+  * id_perfil : int <<FK>>
+  * nome : varchar
+  * cpf : varchar
+  * datanascimento : date
+  * email : varchar
+  * telefone : varchar
+  * instagram : varchar
+  * criadoem : datetime
+  * ativo : boolean
+}
+
+entity perfis {
+  * id : int <<PK>>
+  --
+  * tipo : enum {jogador, usuario, admim, gestor_clube, gestor_torneio}
+}
+
+entity jogadores {
+  * id : int <<PK>>
+  --
+  * id_esportes : int <<FK>>
+  * id_scouts : int <<FK>>
+  * nome : varchar
+  * cpf : varchar
+  * datanascimento : date
+  * email : varchar
+  * telefone : varchar
+  * whatsup : varchar
+  * instagram : varchar
+  * sexo : enum {M, F}
+  * equipamento : varchar
+  * tipo : enum {destro, canhoto}
+  * criadoem : datetime
+}
+
+entity niveis {
+  * id : int <<PK>>
+  --
+  * descrição : varchar
+  * iniciante : boolean
+  * intermediario : boolean
+  * intermediarioplus : boolean
+  * avançado : boolean
+  * profissional : boolean
+}
+
+entity categorias {
+  * id : int <<PK>>
+  --
+  * id_nivel : int <<FK>>
+  * descrição : varchar
+  * simplesmasculina : boolean
+  * simplesfeminina : boolean
+  * duplasmasculina : boolean
+  * duplasfeminina : boolean
+  * duplasmista : boolean
+  * 40feminina : boolean
+  * 40masculina : boolean
+  * 50feminina : boolean
+  * 50masculina : boolean
+  * 60feminina : boolean
+  * 60masculina : boolean
+  * veteranosfeminino : boolean
+  * veteranosmasculino : boolean
+}
+
+entity esportes {
+  * id : int <<PK>>
+  --
+  * name : enum {beachtenis, tenisdemesa, tenis, pickeball}
+}
+
+entity clubes {
+  * id : int <<PK>>
+  --
+  * id_jogadores : int <<FK>>
+  * nome : varchar
+  * responsavel : varchar
+  * telefone : varchar
+  * whatsup : varchar
+  * instagram : varchar
+  * estado : varchar
+  * cidade : varchar
+  * pais : varchar
+  * quantidade : int
+  * ativo : boolean
+  * criadoem : datetime
+}
+
+entity clubes_usuarios {
+  * id_clubes : int <<FK>>
+  * id_jogadores : int <<FK>>
+  --
+  * descrição : varchar
+  * datainserção : datetime
+  * criadoem : datetime
+}
+
+entity torneios {
+  * id : int <<PK>>
+  --
+  * id_esportes : int <<FK>>
+  * nome : varchar
+  * descrição : text
+  * quantidadequadras : int
+  * criadoem : datetime
+}
+
+entity participantes {
+  * id : int <<PK>>
+  --
+  * id_torneios : int <<FK>>
+  * id_jogadores : int <<FK>>
+  * id_categorias : int <<FK>>
+}
+
+entity grupos {
+  * id : int <<PK>>
+  --
+  * id_categoria : int <<FK>>
+  * name : varchar
+  * id_jogador1 : int <<FK>>
+  * id_jogador2 : int <<FK>>
+  * id_jogador3 : int <<FK>>?
+  * id_jogador4 : int <<FK>>?
+}
+
+entity rodadas {
+  * id : int <<PK>>
+  --
+  * name : varchar
+}
+
+entity jogos {
+  * id : int <<PK>>
+  --
+  * id_torneios : int <<FK>>
+  * id_grupos : int <<FK>>
+  * id_rodadas : int <<FK>>
+  * id_jogador1 : int <<FK>>
+  * id_jogador2 : int <<FK>>
+  * id_placares : int <<FK>>
+  * datetime : datetime
+  * localização : varchar
+  * situação : enum {aguardando, em andamento, encerrado}
+}
+
+entity placares {
+  * id : int <<PK>>
+  --
+  * id_jogos : int <<FK>>
+  * pontuação_jogador1 : int
+  * pontuação_jogador2 : int
+  * resultado : varchar
+  * vencedor : varchar
+  * perdedor : varchar
+}
+
+entity scouts {
+  * id : int <<PK>>
+  --
+  * id_players : int <<FK>>
+  * id_esporte : int <<FK>>
+  * id_torneios : int <<FK>>
+  * vitorias : int
+  * derrotas : int
+  * pontos : int
+  * titulos : int
+}
+
+'----- Relacionamentos -----
+usuarios   }o--|| perfis          : atribui
+jogadores  }o--|| esportes        : pratica
+jogadores  }o--|| scouts          : possui
+scouts     }o--|| torneios        : em
+clubes     }o--|| jogadores       : pertence
+clubes_usuarios }o--|| clubes      : associa
+clubes_usuarios }o--|| jogadores   : associa
+torneios   }o--|| esportes        : define
+participantes }o--|| torneios     : inscreve
+participantes }o--|| jogadores    : participa
+participantes }o--|| categorias   : em_categoria
+categorias }o--|| niveis          : nivel
+grupos     }o--|| categorias      : do_tipo
+grupos     }o--|| jogadores       : membros
+jogos      }o--|| torneios        : no
+jogos      }o--|| grupos          : em_grupo
+jogos      }o--|| rodadas         : fase
+jogos      }o--|| jogadores       : competem
+jogos      }o--|| placares        : registra
+placares   }o--|| jogos           : de
+scouts     }o--|| esportes        : em
+@enduml
