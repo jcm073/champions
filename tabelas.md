@@ -11,39 +11,52 @@
 
 ### usuarios
 id
-
+id_perfil
 nome
-
 cpf
-
 datanascimento
-
 email
-
 telefone
-
 instagram
-
-datacriação
-
+criadoem
 ativo (true ou false)
 
-### nivel
+
+### perfis
 id
+tipo {
+    jogador
+    usuario
+    admim
+    gestor_clube
+    gestor_torneio
+}
 
-user_id
+### jogadores
+id
+id_esportes
+id_pontuação
+id_scouts
+nome
+cpf
+datanascimento
+email
+telefone
+whatsup
+instagram
+sexo
+equipamento (marca e modelos da raquete)
+tipo (destro ou canhoto)
+criadoem
 
-iniciante
-
-intermediario
-
-intermediarioplus
-
-avançado
-
-profissional
-
+### niveis
+id
 descrição
+iniciante
+intermediario
+intermediarioplus
+avançado
+profissional
 
 ### categorias
 id
@@ -65,25 +78,77 @@ veteranosmasculino
 
 
 ### esportes
-id_usuarios
-beachtenis
-tenisdemesa
-tenis
-pickeball
+id
+name (beachtenis, tenisdemesa, tenis, pickeball)
 
 ### clubes
 id
-id_usuarios
+id_jogadores
 nome
+responsavel
+telefone
+whatsup
+instagram
 estado
 cidade
 pais
-quantidade quadras/mesas)
+quantidade (quadras/mesas)
 ativo (true ou false)
-datacriação
+criadoem
 
+### clubes_usuarios
+id_clubes
+id_jogadores
+descrição
+datainserção
+criadoem
 
 ### torneios
 id
+id_esportes
 nome
 descrição
+quantidadequadras
+criadoem
+
+### grupos
+id
+name (a, b, c, ou 1, 2, 3)
+id_jogador1
+id_jogador2
+id_jogador3
+id_jogador4
+
+### rodadas
+id
+name (1,2,3, oitava-finais, quartas-finais, semi-finais, final)
+
+### jogos
+id
+id_torneios
+id_grupos
+id_rodadas
+id_jogador1
+id_jogador2
+id_placares
+datetime
+localização (quadra1, quadra2, etc)
+situação (aguardando inicio, em andamento, encerrado)
+
+### placares
+id
+id_jogos
+pontuação_jogador1
+pontuação_jogador2
+resultado (1x2)
+vencedor (jogador2)
+perdedor (jogador1)
+
+### scouts
+id
+id_players
+id_esporte
+vitorias
+derrotas
+pontos
+titulos
