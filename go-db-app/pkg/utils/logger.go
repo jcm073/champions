@@ -1,30 +1,11 @@
-package utils
+package logger
 
-import (
-	"log"
-	"os"
-)
+import "log"
 
-var (
-	infoLogger    *log.Logger
-	errorLogger   *log.Logger
-	debugLogger   *log.Logger
-)
-
-func init() {
-	infoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	errorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-	debugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
+func Info(msg string) {
+    log.Println("[INFO]", msg)
 }
 
-func Info(message string) {
-	infoLogger.Println(message)
-}
-
-func Error(message string) {
-	errorLogger.Println(message)
-}
-
-func Debug(message string) {
-	debugLogger.Println(message)
+func Error(msg string) {
+    log.Println("[ERROR]", msg)
 }
