@@ -1,0 +1,48 @@
+perfis
+  └─< usuarios (id_perfil)
+
+esportes
+  └─< jogadores (id_esportes)
+  └─< scouts (id_esporte)
+  └─< torneios (id_esportes)
+
+scouts
+  └─< jogadores (id_scouts)
+  └─< scouts (id_players)
+  └─< scouts (id_torneios)
+
+jogadores
+  └─< clubes (id_jogadores)
+  └─< clubes_usuarios (id_jogadores)
+  └─< participantes (id_jogadores)
+  └─< grupos (id_jogador1, id_jogador2, id_jogador3, id_jogador4)
+  └─< jogos (id_jogador1, id_jogador2)
+  └─< scouts (id_players)
+
+clubes
+  └─< clubes_usuarios (id_clubes)
+
+niveis
+  └─< categorias (id_nivel)
+
+categorias
+  └─< participantes (id_categorias)
+  └─< grupos (id_categoria)
+
+torneios
+  └─< participantes (id_torneios)
+  └─< jogos (id_torneios)
+  └─< scouts (id_torneios)
+
+grupos
+  └─< jogos (id_grupos)
+
+rodadas
+  └─< jogos (id_rodadas)
+
+placares
+  └─< jogos (id_placares)
+  └─< placares (id_jogos)
+
+jogos
+  └─< placares (id_jogos)
