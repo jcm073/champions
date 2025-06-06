@@ -20,7 +20,7 @@ type Usuario struct {
 	Nome           string    `gorm:"type:varchar(100);not null" json:"nome"`
 	Username       string    `gorm:"type:varchar(50);unique;not null" json:"username"`
 	CPF            string    `gorm:"type:varchar(14);unique;not null" json:"cpf"`
-	DataNascimento time.Time `gorm:"type:date;not null" json:"datanascimento"`
+	DataNascimento time.Time `gorm:"type:datetime;not null" json:"data_nascimento"`
 	Email          string    `gorm:"type:varchar(100);unique;not null" json:"email"`
 	Password       string    `gorm:"type:varchar(255);not null" json:"password"`
 	Telefone       string    `gorm:"type:varchar(20)" json:"telefone"`

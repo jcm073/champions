@@ -39,12 +39,6 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso", "usuario": gin.H{
-		"id":       usuario.ID,
-		"username": usuario.Username,
-		"email":    usuario.Email,
-	}})
-	// Generate JWT token after successful signup
 	token, err := utils.GenerateJWT(usuario.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível gerar o token"})
@@ -52,19 +46,14 @@ func Signup(c *gin.Context) {
 	}
 	c.SetCookie("token", token, 24*3600, "/", "localhost", false, true)
 	c.JSON(http.StatusCreated, gin.H{
-		"token": token,
+		"message": "Usuario criado com sucesso",
 		"usuario": gin.H{
 			"id":       usuario.ID,
 			"username": usuario.Username,
 			"email":    usuario.Email,
 		},
+		"token": token,
 	})
-	c.SetCookie("token", token, 24*3600, "/", "localhost", false, true) // Set the cookie with the token
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso"})
-	c.JSON(http.StatusCreated, gin.H{"usuario": usuario})
-	c.JSON(http.StatusCreated, gin.H{"token": token})
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso", "token": token})
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso", "usuario": usuario, "token": token})
 }
 
 func Login(c *gin.Context) {
