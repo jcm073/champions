@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"competitions/config"
+	"competitions/routes"
 )
 
 func main() {
@@ -16,10 +17,9 @@ func main() {
 	}
 
 	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello, World!",
-		})
-	})
-	r.Run() // roda na porta 8080 por padrão
+	// Registra as rotas
+	routes.RegisterRoutes(r)
+	// Inicia o servidor
+	// Escuta e serve na porta 8080
+	r.Run(":8080") // roda na porta 8080 por padrão
 }
