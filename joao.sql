@@ -49,7 +49,16 @@ CREATE TABLE esportes (
   nome ENUM('Beach Tenis','Tenis de Mesa','Tenis','Pickleball') NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- 7. JOGADORES
+-- 7. SCOUTS
+CREATE TABLE scouts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  vitorias INT NOT NULL DEFAULT 0,
+  derrotas INT NOT NULL DEFAULT 0,
+  pontos INT NOT NULL DEFAULT 0,
+  titulos INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+-- 8. JOGADORES
 CREATE TABLE jogadores (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL,
@@ -70,22 +79,13 @@ CREATE TABLE jogadores (
   FOREIGN KEY (id_scout) REFERENCES scouts(id)
 ) ENGINE=InnoDB;
 
--- 8. JOGADORES_ESPORTES (N:N)
+-- 9. JOGADORES_ESPORTES (N:N)
 CREATE TABLE jogadores_esportes (
   id_jogador INT NOT NULL,
   id_esporte INT NOT NULL,
   PRIMARY KEY (id_jogador, id_esporte),
   FOREIGN KEY (id_jogador) REFERENCES jogadores(id) ON DELETE CASCADE,
   FOREIGN KEY (id_esporte) REFERENCES esportes(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
--- 9. SCOUTS
-CREATE TABLE scouts (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  vitorias INT NOT NULL DEFAULT 0,
-  derrotas INT NOT NULL DEFAULT 0,
-  pontos INT NOT NULL DEFAULT 0,
-  titulos INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
 
 -- 10. CLUBES
@@ -126,7 +126,17 @@ CREATE TABLE torneios (
   FOREIGN KEY (id_esporte) REFERENCES esportes(id)
 ) ENGINE=InnoDB;
 
--- 13. PARTICIPANTES
+-- 13. DUPLAS
+CREATE TABLE duplas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_jogador_a INT NOT NULL,
+  id_jogador_b INT NOT NULL,
+  nome_dupla VARCHAR(100),
+  FOREIGN KEY (id_jogador_a) REFERENCES jogadores(id) ON DELETE CASCADE,
+  FOREIGN KEY (id_jogador_b) REFERENCES jogadores(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 14. PARTICIPANTES
 CREATE TABLE participantes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_torneio INT NOT NULL,
@@ -138,16 +148,6 @@ CREATE TABLE participantes (
   FOREIGN KEY (id_jogador) REFERENCES jogadores(id) ON DELETE CASCADE,
   FOREIGN KEY (id_categoria) REFERENCES categorias(id),
   FOREIGN KEY (id_dupla) REFERENCES duplas(id)
-) ENGINE=InnoDB;
-
--- 14. DUPLAS
-CREATE TABLE duplas (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  id_jogador_a INT NOT NULL,
-  id_jogador_b INT NOT NULL,
-  nome_dupla VARCHAR(100),
-  FOREIGN KEY (id_jogador_a) REFERENCES jogadores(id) ON DELETE CASCADE,
-  FOREIGN KEY (id_jogador_b) REFERENCES jogadores(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- 15. GRUPOS
@@ -212,3 +212,5 @@ CREATE TABLE placares (
 CREATE INDEX idx_jogadores_nome ON jogadores(nome);
 CREATE INDEX idx_torneios_nome ON torneios(nome);
 CREATE INDEX idx_jogos_data_hora ON jogos(data_hora);
+CREATE INDEX idx_participantes_torneio ON participantes(id_torneio);
+CREATE INDEX idx_grupos_categoria ON grupos(id_categoria);
