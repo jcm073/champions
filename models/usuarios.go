@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/go-playground/validator/v10"
+)
 
 // Usuario representa um usuário do sistema, com diferentes tipos de acesso e informações pessoais.
 // Os tipos de usuário são: jogador, usuario, admin, gestor_clube e gestor_torneio.
@@ -15,16 +19,22 @@ import "time"
 // - Instagram: Nome de usuário do Instagram, opcional, com tamanho máximo de 50 caracteres.
 // - CriadoEm: Data e hora de criação do registro, preenchida automaticamente.
 type Usuario struct {
-	ID             uint      `gorm:"primaryKey" json:"id"`
-	Tipo           string    `gorm:"type:enum('jogador','usuario','admin','gestor_clube','gestor_torneio');not null" json:"tipo"`
-	Nome           string    `gorm:"type:varchar(100);not null" json:"nome"`
-	Username       string    `gorm:"type:varchar(50);unique;not null" json:"username"`
-	CPF            string    `gorm:"type:varchar(14);unique;not null" json:"cpf"`
-	DataNascimento time.Time `gorm:"type:datetime;not null" json:"data_nascimento"`
-	Email          string    `gorm:"type:varchar(100);unique;not null" json:"email"`
-	Password       string    `gorm:"type:varchar(255);not null" json:"password"`
-	Telefone       string    `gorm:"type:varchar(20)" json:"telefone"`
-	Instagram      string    `gorm:"type:varchar(50)" json:"instagram"`
-	CriadoEm       time.Time `gorm:"autoCreateTime" json:"criadoem"`
-	Ativo          bool      `gorm:"type:tinyint(1);default:1" json:"ativo"`
+	ID             uint      `json:"id"`
+	Tipo           string    `json:"tipo" validate:"required,oneof=jogador usuario admin gestor_clube gestor_torneio"`
+	Nome           string    `json:"nome" validate:"required,max=100"`
+	Username       string    `json:"username" validate:"required,max=50"`
+	CPF            string    `json:"cpf" validate:"required,max=14"`
+	DataNascimento time.Time `json:"data_nascimento" validate:"required"`
+	Email          string    `json:"email" validate:"required,email,max=100"`
+	Password       string    `json:"password,omitempty" validate:"required,min=6,max=255"`
+	Telefone       string    `json:"telefone" validate:"max=20"`
+	Instagram      string    `json:"instagram" validate:"max=50"`
+	CriadoEm       time.Time `json:"criado_em"`
+	Ativo          bool      `json:"ativo"`
+}
+
+// Validação usando go-playground/validator
+func (u *Usuario) Validate() error {
+	validate := validator.New()
+	return validate.Struct(u)
 }

@@ -4,7 +4,7 @@ import (
 	"competitions/config"
 	"competitions/models"
 	"competitions/utils"
-
+	"context"
 	"fmt"
 	"net/http"
 
@@ -12,6 +12,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Signup handles user registration
+// It hashes the password and stores the user in the database
+// It returns a JWT token upon successful registration
+// @Summary      Signup
+// @Description  Register a new user with hashed password
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        user  body      models.Usuario  true  "User data"
+// @Success      201  {object}  gin.H{"message": "Usuario criado com sucesso", "usuario": models.Usuario, "token": string}
+// @Failure      400  {object}  gin.H{"error": "Error message"}
+// @Failure      500  {object}  gin.H{"error": "Error message"}
 func Signup(c *gin.Context) {
 	var usuario models.Usuario
 
@@ -34,10 +46,23 @@ func Signup(c *gin.Context) {
 	}
 	usuario.Password = string(hashedPassword)
 
-	if err := config.DB.Create(&usuario).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o usuario"})
+	query := `
+		INSERT INTO usuarios (tipo, nome, username, cpf, data_nascimento, email, password, telefone, instagram, ativo)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id
+	`
+	var id int
+	err = config.DB.QueryRow(
+		context.Background(),
+		query,
+		usuario.Tipo, usuario.Nome, usuario.Username, usuario.CPF, usuario.DataNascimento,
+		usuario.Email, usuario.Password, usuario.Telefone, usuario.Instagram, usuario.Ativo,
+	).Scan(&id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o usuario: " + err.Error()})
 		return
 	}
+	usuario.ID = uint(id)
 
 	token, err := utils.GenerateJWT(usuario.ID)
 	if err != nil {
@@ -56,6 +81,19 @@ func Signup(c *gin.Context) {
 	})
 }
 
+// Login handles user login
+// It checks the provided email and password against the database
+// If valid, it returns a JWT token
+// @Summary      Login
+// @Description  Authenticate user and return JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        loginData  body      struct{Email string; Password string}  true  "Login data"
+// @Success      200  {object}  gin.H{"token": string, "usuario": models.Usuario}
+// @Failure      400  {object}  gin.H{"error": "Error message"}
+// @Failure      401  {object}  gin.H{"error": "Invalido email ou senha"}
+// @Failure      500  {object}  gin.H{"error": "Error message"}
 func Login(c *gin.Context) {
 	var loginData struct {
 		Email    string `json:"email"`
@@ -68,7 +106,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Where("email = ?", loginData.Email).First(&usuario).Error; err != nil {
+	query := `
+		SELECT id, username, email, password
+		FROM usuarios
+		WHERE email = $1
+	`
+	err := config.DB.QueryRow(context.Background(), query, loginData.Email).
+		Scan(&usuario.ID, &usuario.Username, &usuario.Email, &usuario.Password)
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalido email ou senha"})
 		return
 	}
@@ -97,11 +142,17 @@ func Login(c *gin.Context) {
 
 }
 
+// Logout handles user logout
+// It clears the JWT token cookie
+// @Summary      Logout
+// @Description  Logout user and clear JWT token
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  gin.H{"message": "Logout realizado com sucesso"}
+// @Failure      500  {object}  gin.H{"error": "Error message"}
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
 func Logout(c *gin.Context) {
-	// For stateless JWT authentication, logout is handled on the client side.
-	// Here we can just return a success message.
-	// Logic to handle user logout
-	// This could involve invalidating the JWT token or clearing session data
-	c.SetCookie("token", "", -1, "/", "localhost", false, true) // Clear the cookie
+	c.SetCookie("token", "", -1, "/", "localhost", false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Logout realizado com sucesso"})
 }
