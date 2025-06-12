@@ -1,70 +1,88 @@
 package utils
 
 import (
-	"fmt"
+	"competitions/config"
+	"competitions/models"
+	"context"
 	"log"
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
-func GenerateJWT(userID uint) (string, error) {
-
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(), // 1 day expiry
+// Retorna o middleware configurado do gin-jwt
+func JwtMiddleware() (*jwt.GinJWTMiddleware, error) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Aviso: .env não encontrado ou não pôde ser carregado")
 	}
+	secretKey := os.Getenv("JWT_SECRET")
+	return jwt.New(&jwt.GinJWTMiddleware{
+		Realm:       "competitions zone",
+		Key:         []byte(secretKey),
+		Timeout:     24 * time.Hour,
+		MaxRefresh:  24 * time.Hour,
+		IdentityKey: "user_id",
+		PayloadFunc: func(data interface{}) jwt.MapClaims {
+			if v, ok := data.(map[string]interface{}); ok {
+				return jwt.MapClaims{
+					"user_id": v["user_id"],
+				}
+			}
+			return jwt.MapClaims{}
+		},
+		IdentityHandler: func(c *gin.Context) interface{} {
+			claims := jwt.ExtractClaims(c)
+			return map[string]interface{}{
+				"user_id": claims["user_id"],
+			}
+		},
+		Authenticator: func(c *gin.Context) (interface{}, error) {
+			var loginData struct {
+				Email    string `json:"email"`
+				Password string `json:"password"`
+			}
+			if err := c.ShouldBindJSON(&loginData); err != nil {
+				return nil, jwt.ErrMissingLoginValues
+			}
+			email := loginData.Email
+			password := loginData.Password
 
-	log.Println("JWT_SECRET during sign:", os.Getenv("JWT_SECRET"))
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+			query := `
+				SELECT id, username, email, password
+				FROM usuarios
+				WHERE email = $1
+			`
+			var user models.Usuario
+			err := config.DB.QueryRow(context.Background(), query, email).
+				Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+			if err != nil {
+				return nil, jwt.ErrFailedAuthentication
+			}
 
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-}
+			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+			if err != nil {
+				return nil, jwt.ErrFailedAuthentication
+			}
 
-func ParseJWT(tokenStr string) (uint, error) {
-
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("JWT_SECRET")), nil
+			return map[string]interface{}{
+				"user_id": user.ID,
+			}, nil
+		},
+		Authorizator: func(data any, c *gin.Context) bool {
+			// Implemente sua lógica de autorização aqui
+			return true
+		},
+		Unauthorized: func(c *gin.Context, code int, message string) {
+			c.JSON(code, gin.H{"error": message})
+		},
+		TokenLookup:   "header: Authorization, query: token, cookie: token",
+		TokenHeadName: "Bearer",
+		TimeFunc:      time.Now,
 	})
-
-	if err != nil {
-		log.Println("JWT parse error:", err)
-		return 0, fmt.Errorf("token invalido ou expirado")
-	}
-
-	if !token.Valid {
-		log.Println("JWT invalid token")
-		return 0, fmt.Errorf("token invalido ou expirado")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		log.Println("JWT claims cast failed")
-		return 0, fmt.Errorf("invalido token claims")
-	}
-
-	uidFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		log.Println("user_id missing in claims")
-		return 0, fmt.Errorf("user_id not found in token")
-	}
-	log.Println("Parsed user_id:", uidFloat)
-
-	// save the user_id in context for later use
-	if uidFloat <= 0 {
-		log.Println("Invalid user_id in claims:", uidFloat)
-		return 0, fmt.Errorf("invalid user_id in token")
-	}
-
-	return uint(uidFloat), nil
-}
-
-// ValidateJWT checks if the JWT is valid and returns the user ID if it is.
-func ValidateJWT(tokenStr string) (uint, error) {
-	userID, err := ParseJWT(tokenStr)
-	if err != nil {
-		return 0, err
-	}
-	return userID, nil
 }

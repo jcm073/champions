@@ -26,8 +26,8 @@ type Usuario struct {
 	CPF            string    `json:"cpf" validate:"required,max=14"`
 	DataNascimento time.Time `json:"data_nascimento" validate:"required"`
 	Email          string    `json:"email" validate:"required,email,max=100"`
-	Password       string    `json:"password,omitempty" validate:"required,min=6,max=255"`
-	Telefone       string    `json:"telefone" validate:"max=20"`
+	Password       string    `json:"password,omitempty" validate:"required,min=8,max=255"`
+	Telefone       string    `json:"telefone" validate:"required,min=9,max=20"`
 	Instagram      string    `json:"instagram" validate:"max=50"`
 	CriadoEm       time.Time `json:"criado_em"`
 	Ativo          bool      `json:"ativo"`

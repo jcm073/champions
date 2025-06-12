@@ -2,25 +2,40 @@ package routes
 
 import (
 	"competitions/handlers"
-	middlewares "competitions/middleware"
+	"competitions/utils"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterRoutes(router *gin.Engine) {
-	router.POST("/signup", handlers.Signup)
-	router.POST("/login", handlers.Login)
+	jwtMiddleware, err := utils.JwtMiddleware()
+	if err != nil {
+		log.Fatal("JWT Error:" + err.Error())
+	}
 
-	router.GET("/usuarios", handlers.GetUsuarios)
-	router.GET("/usuarios/:id", handlers.GetUsuarioByID)
+	router.POST("/login", jwtMiddleware.LoginHandler)
+	router.POST("/signup", handlers.Signup) // Adicionando a rota de signup
 
-	auth := router.Group("/")
-	auth.Use(middlewares.JWTAuthMiddleware())
+	auth := router.Group("/api")
+	auth.Use(jwtMiddleware.MiddlewareFunc())
 	{
-		auth.POST("/usuarios", handlers.CreateUsuario)
+		auth.GET("/usuarios", handlers.GetUsuarios)
+		auth.GET("/usuarios/:id", handlers.GetUsuarioByID)
 		auth.PUT("/usuarios/:id", handlers.UpdateUsuario)
 		auth.DELETE("/usuarios/:id", handlers.DeleteUsuario)
-		auth.POST("/logout", handlers.Logout)
-
+		// ... outras rotas protegidas
 	}
+
+	// Rota de logout
+	auth.GET("/logout", jwtMiddleware.LogoutHandler)
+	// Rota de refresh token
+	auth.GET("/refresh_token", jwtMiddleware.RefreshHandler)
+	// Rota de health check
+	auth.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "OK",
+			"message": "API is running",
+		})
+	})
 }
