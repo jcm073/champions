@@ -19,12 +19,13 @@ import (
 // - Instagram: Nome de usuário do Instagram, opcional, com tamanho máximo de 50 caracteres.
 // - CriadoEm: Data e hora de criação do registro, preenchida automaticamente.
 type Usuario struct {
-	ID             uint      `json:"id"`
-	Tipo           string    `json:"tipo" validate:"required,oneof=jogador usuario admin gestor_clube gestor_torneio"`
-	Nome           string    `json:"nome" validate:"required,max=100"`
-	Username       string    `json:"username" validate:"required,max=50"`
-	CPF            string    `json:"cpf" validate:"required,max=14"`
-	DataNascimento time.Time `json:"data_nascimento" validate:"required"`
+	ID       uint   `json:"id"`
+	Tipo     string `json:"tipo" validate:"required,oneof=jogador usuario admin gestor_clube gestor_torneio"`
+	Nome     string `json:"nome" validate:"required,max=100"`
+	Username string `json:"username" validate:"required,max=50"`
+	CPF      string `json:"cpf" validate:"required,max=14"`
+	// DataNascimento is stored as a string in "dd/mm/yyyy" format.
+	DataNascimento string    `json:"data_nascimento" validate:"required,datetime=year=2000,month=1,day=2"` // Example: "01/01/2000"
 	Email          string    `json:"email" validate:"required,email,max=100"`
 	Password       string    `json:"password,omitempty" validate:"required,min=8,max=255"`
 	Telefone       string    `json:"telefone" validate:"required,min=9,max=20"`
@@ -34,6 +35,8 @@ type Usuario struct {
 }
 
 // Validação usando go-playground/validator
+
+// Validate checks the validation rules for the Usuario struct.
 func (u *Usuario) Validate() error {
 	validate := validator.New()
 	return validate.Struct(u)
