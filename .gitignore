@@ -32,7 +32,8 @@ go.work.sum
 
 # Logs
 *.log
-# Temporary files
+# Temporary files and dir
+tmp/
 *.tmp
 # Backup files
 *.bak
