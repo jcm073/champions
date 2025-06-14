@@ -1,0 +1,17 @@
+INSERT INTO usuarios (tipo,nome,username,cpf,data_nascimento,email,password,telefone,instagram,criado_em,ativo) VALUES 
+('jogador','joao','jcmartins','199.999.999-51','1973-01-31 00:00:00','jcmartins@gmailcom','$2a$10$tVF9WrkKH1PVY3mZWcD8OeIkTXZuze0cfbPHXftsP/PZ8FqeUISU6','98677-9999','@jcmartins','2025-06-06 15:56:24.697',true)
+
+
+INSERT INTO usuarios (tipo,nome,username,cpf,data_nascimento,email,password,telefone,instagram,criado_em,ativo) VALUES 
+('jogador','joao2','jcmartins2','199.999.999-52','1973-01-31 00:00:00','jcmartins2@gmailcom','$2a$10$tVF9WrkKH1PVY3mZWcD8OeIkTXZuze0cfbPHXftsP/PZ8FqeUISU6','98677-9999','@jcmartins2','2025-06-06 15:56:24.697',0);
+
+
+BOOLEAN TRUE=1 FAlSE=0
+\du lista usuarios do postgresql
+\l lista databases
+\c campeonatos ( conecta no banco de dados campeonatos)
+\dt lista tabela
+\d+ tabela ( descreve as colunas da tabela)
+
+Altera tabela
+ALTER TABLE usuarios ADD username VARCHAR(255) UNIQUE;

@@ -1,0 +1,13 @@
+{
+    "tipo": "jogador",
+    "nome": "bertochi",
+    "username": "bertochi",
+    "cpf": "200.888.888-80",
+    "data_nascimento": "1980-01-01T00:00:00Z",
+    "email": "bertochi@gmailcom",
+    "password": "bertochi123",
+    "telefone": "98677-8888",
+    "instagram": "@bertochi",
+    "criado_em": "2025-06-12T23:12:05Z",
+    "ativo": true
+}

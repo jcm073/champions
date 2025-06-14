@@ -23,3 +23,16 @@ go.work.sum
 
 # env file
 .env
+
+# Visual Studio Code settings
+.vscode/
+
+# Local configuration files
+*.local
+
+# Logs
+*.log
+# Temporary files
+*.tmp
+# Backup files
+*.bak

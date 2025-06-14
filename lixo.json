@@ -1,0 +1,13 @@
+{
+    "tipo": "jogador",
+    "nome": "joao3",
+    "username": "jcmartins3",
+    "cpf": "199.999.999-53",
+    "data_nascimento": "1973-01-01T00:00:00Z",
+    "email": "jcmartins3@gmailcom",
+    "password": "$2a$10$tVF9WrkKH1PVY3mZWcD8OeIkTXZuze0cfbPHXftsP/PZ8FqeUISU6",
+    "telefone": "98677-9999",
+    "instagram": "@jcmartins3",
+    "criado_em": "2025-06-06T18:36:05Z",
+    "ativo": true
+}
