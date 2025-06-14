@@ -10,3 +10,8 @@ DB_PASSWORD=sua_password
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=campeonatos
+
+# Air para auto reload de arquivos estaticos
+go install github.com/air-verse/air@latest
+air init
+air -c .air.toml ou apenas digite air
