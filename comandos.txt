@@ -15,3 +15,5 @@ BOOLEAN TRUE=1 FAlSE=0
 
 Altera tabela
 ALTER TABLE usuarios ADD username VARCHAR(255) UNIQUE;
+
+ALTER TABLE scouts RENAME COLUMN pontos to rating;
