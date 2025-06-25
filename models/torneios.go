@@ -19,25 +19,20 @@ var validate = validator.New()
 //   - CriadoEm: Data e hora de criação do registro, preenchida automaticamente.
 type Torneio struct {
 	ID                int       `json:"id,omitempty"`
-	EsporteID         int       `json:"id_esporte" validate:"required"`
+	EsporteID         int       `json:"id_esporte" validate:"gt=0"`
 	Nome              string    `json:"nome" validate:"required,max=100"`
 	Descricao         string    `json:"descricao" validate:"max=255"`
-	QuantidadeQuadras int       `json:"quantidade_quadras" validate:"required,min=1"`
+	QuantidadeQuadras int       `json:"quantidade_quadras" validate:"min=1"`
 	CriadoEm          time.Time `json:"criado_em,omitempty"`
-}
-
-// Validação usando go-playground/validator
-func (t *Torneio) Validate() error {
-	return validate.Struct(t)
 }
 
 // TorneioInput é usado para receber dados de entrada ao criar ou atualizar um torneio.
 // Ele é usado para validar os dados antes de criar ou atualizar um registro na tabela "torneios".
 type TorneioInput struct {
-	EsporteID         int    `json:"id_esporte" validate:"required"`
+	EsporteID         int    `json:"id_esporte" validate:"gt=0"`
 	Nome              string `json:"nome" validate:"required,max=100"`
 	Descricao         string `json:"descricao" validate:"max=255"`
-	QuantidadeQuadras int    `json:"quantidade_quadras" validate:"required,min=1"`
+	QuantidadeQuadras int    `json:"quantidade_quadras" validate:"min=1"`
 }
 
 // Validação usando go-playground/validator

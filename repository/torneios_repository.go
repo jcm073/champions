@@ -9,7 +9,7 @@ import (
 
 // TorneioRepository defines the interface for tournament data operations.
 type TorneioRepository interface {
-	Create(ctx context.Context, torneio *models.Torneio) error
+	Create(ctx context.Context, input models.TorneioInput) (*models.Torneio, error)
 	FindAll(ctx context.Context) ([]models.Torneio, error)
 	FindByID(ctx context.Context, id int) (*models.Torneio, error)
 	Update(ctx context.Context, id int, input models.TorneioInput) (int64, error)
@@ -26,16 +26,21 @@ func NewTorneioRepository(db *pgxpool.Pool) TorneioRepository {
 	return &pgTorneioRepository{db: db}
 }
 
-func (r *pgTorneioRepository) Create(ctx context.Context, torneio *models.Torneio) error {
+func (r *pgTorneioRepository) Create(ctx context.Context, input models.TorneioInput) (*models.Torneio, error) {
+	var torneio models.Torneio
 	query := `
         INSERT INTO torneios (id_esporte, nome, descricao, quantidade_quadras)
         VALUES ($1, $2, $3, $4)
         RETURNING id, id_esporte, nome, descricao, quantidade_quadras, criado_em
     `
-	return r.db.QueryRow(
+	err := r.db.QueryRow(
 		ctx, query,
-		torneio.EsporteID, torneio.Nome, torneio.Descricao, torneio.QuantidadeQuadras,
+		input.EsporteID, input.Nome, input.Descricao, input.QuantidadeQuadras,
 	).Scan(&torneio.ID, &torneio.EsporteID, &torneio.Nome, &torneio.Descricao, &torneio.QuantidadeQuadras, &torneio.CriadoEm)
+	if err != nil {
+		return nil, err
+	}
+	return &torneio, nil
 }
 
 func (r *pgTorneioRepository) FindAll(ctx context.Context) ([]models.Torneio, error) {
@@ -78,14 +83,3 @@ func (r *pgTorneioRepository) Delete(ctx context.Context, id int) (int64, error)
 	result, err := r.db.Exec(ctx, query, id)
 	return result.RowsAffected(), err
 }
-
-// Close the repository connection if needed
-func (r *pgTorneioRepository) Close() {
-	if r.db != nil {
-		r.db.Close()
-	}
-}
-
-// Note: Ensure to handle the closing of the database connection properly in your application lifecycle.
-// This is typically done in the main application or a dedicated cleanup function.
-// The Close method is provided to allow for graceful shutdown of the repository.

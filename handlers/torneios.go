@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -31,19 +32,28 @@ func (h *TorneioHandler) CreateTorneio(c *gin.Context) {
 		return
 	}
 
+	// Validação aprimorada dos dados de entrada
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		// Melhora a resposta de erro de validação para ser mais amigável ao cliente.
+		var validationErrs validator.ValidationErrors
+		if errors.As(err, &validationErrs) {
+			errorMessages := make(map[string]string)
+			for _, fieldErr := range validationErrs {
+				// Usa o nome do campo da struct para a chave do erro e a regra que falhou.
+				errorMessages[fieldErr.Field()] = "Erro de validação na regra: " + fieldErr.Tag()
+			}
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Dados inválidos.",
+				"errors":  errorMessages,
+			})
+			return
+		}
+		// Fallback para outros tipos de erro que não são de validação.
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Dados inválidos.", "error": err.Error()})
 		return
 	}
 
-	torneio := models.Torneio{
-		EsporteID:         input.EsporteID,
-		Nome:              input.Nome,
-		Descricao:         input.Descricao,
-		QuantidadeQuadras: input.QuantidadeQuadras,
-	}
-
-	err := h.repo.Create(c.Request.Context(), &torneio)
+	torneio, err := h.repo.Create(c.Request.Context(), input)
 	if err != nil {
 		log.Printf("Erro ao criar torneio: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro interno ao criar o torneio."})
@@ -98,8 +108,24 @@ func (h *TorneioHandler) UpdateTorneio(c *gin.Context) {
 		return
 	}
 
+	// Validação aprimorada dos dados de entrada
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		// Melhora a resposta de erro de validação para ser mais amigável ao cliente.
+		var validationErrs validator.ValidationErrors
+		if errors.As(err, &validationErrs) {
+			errorMessages := make(map[string]string)
+			for _, fieldErr := range validationErrs {
+				// Usa o nome do campo da struct para a chave do erro e a regra que falhou.
+				errorMessages[fieldErr.Field()] = "Erro de validação na regra: " + fieldErr.Tag()
+			}
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "Dados inválidos.",
+				"errors":  errorMessages,
+			})
+			return
+		}
+		// Fallback para outros tipos de erro que não são de validação.
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Dados inválidos.", "error": err.Error()})
 		return
 	}
 

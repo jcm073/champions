@@ -1,0 +1,19 @@
+meta {
+  name: Login do Usuário
+  type: http
+  seq: 1
+}
+
+http {
+  url: {{baseUrl}}/login
+  method: POST
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "jogador1",
+    "password": "sua_senha_aqui"
+  }
+}
