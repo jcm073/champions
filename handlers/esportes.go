@@ -3,6 +3,7 @@ package handlers
 import (
 	"competitions/models"
 	"competitions/repository"
+	"competitions/validation"
 	"errors"
 	"log"
 	"net/http"
@@ -30,7 +31,10 @@ func (h *EsporteHandler) CreateEsporte(c *gin.Context) {
 	}
 
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
@@ -84,13 +88,26 @@ func (h *EsporteHandler) UpdateEsporte(c *gin.Context) {
 	}
 
 	var input models.EsporteInput
-	if err := c.ShouldBindJSON(&input); err != nil || input.Validate() != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := input.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
 	rowsAffected, err := h.repo.Update(c.Request.Context(), id, input)
-	if err != nil || rowsAffected == 0 {
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro ao atualizar o esporte."})
+		return
+	}
+
+	if rowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Esporte não encontrado para atualizar"})
 		return
 	}
@@ -106,7 +123,13 @@ func (h *EsporteHandler) DeleteEsporte(c *gin.Context) {
 	}
 
 	rowsAffected, err := h.repo.Delete(c.Request.Context(), id)
-	if err != nil || rowsAffected == 0 {
+	if err != nil {
+		log.Printf("Erro ao deletar esporte %d: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro ao deletar o esporte."})
+		return
+	}
+
+	if rowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Esporte não encontrado para deletar"})
 		return
 	}

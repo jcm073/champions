@@ -3,6 +3,7 @@ package handlers
 import (
 	"competitions/models"
 	"competitions/repository"
+	"competitions/validation"
 	"errors"
 	"log"
 	"net/http"
@@ -73,7 +74,10 @@ func (h *UsuarioHandler) CreateUsuario(c *gin.Context) {
 	}
 
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
@@ -128,7 +132,10 @@ func (h *UsuarioHandler) UpdateUsuario(c *gin.Context) {
 	}
 
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
@@ -201,7 +208,10 @@ func (h *UsuarioHandler) ChangePassword(c *gin.Context) {
 	}
 
 	if err := input.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 

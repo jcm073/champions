@@ -1,8 +1,6 @@
 package models
 
-import "github.com/go-playground/validator/v10"
-
-var esporteValidator = validator.New()
+import "competitions/validation"
 
 // Esporte representa a entidade 'esportes' no banco de dados.
 type Esporte struct {
@@ -18,5 +16,5 @@ type EsporteInput struct {
 
 // Validate executa as regras de validação para a entrada de Esporte.
 func (ei *EsporteInput) Validate() error {
-	return esporteValidator.Struct(ei)
+	return validation.ValidateStruct(ei)
 }

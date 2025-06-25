@@ -1,12 +1,9 @@
 package models
 
 import (
+	"competitions/validation"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
-
-var userValidator = validator.New()
 
 // Usuario representa um usuário do sistema, com diferentes tipos de acesso e informações pessoais.
 // Os tipos de usuário são: jogador, usuario, admin, gestor_clube e gestor_torneio.
@@ -51,7 +48,7 @@ type UsuarioInput struct {
 
 // Validate checks the validation rules for the Usuario struct.
 func (ui *UsuarioInput) Validate() error {
-	return userValidator.Struct(ui)
+	return validation.ValidateStruct(ui)
 }
 
 // UpdateUsuarioInput é usado para receber dados de entrada ao atualizar um usuário.
@@ -69,7 +66,7 @@ type UpdateUsuarioInput struct {
 }
 
 func (uui *UpdateUsuarioInput) Validate() error {
-	return userValidator.Struct(uui)
+	return validation.ValidateStruct(uui)
 }
 
 // ChangePasswordInput é usado para receber dados de entrada ao mudar a senha de um usuário.
@@ -80,5 +77,5 @@ type ChangePasswordInput struct {
 
 // Validate checks the validation rules for the ChangePasswordInput struct.
 func (cpi *ChangePasswordInput) Validate() error {
-	return userValidator.Struct(cpi)
+	return validation.ValidateStruct(cpi)
 }

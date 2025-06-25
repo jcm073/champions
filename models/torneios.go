@@ -1,12 +1,9 @@
 package models
 
 import (
+	"competitions/validation"
 	"time"
-
-	"github.com/go-playground/validator/v10"
 )
-
-var validate = validator.New()
 
 // Torneio representa um torneio esportivo, com informações sobre o esporte, nome, descrição e quantidade de quadras.
 // A tabela é criada com o nome "torneios" e possui os seguintes campos:
@@ -37,5 +34,5 @@ type TorneioInput struct {
 
 // Validação usando go-playground/validator
 func (t *TorneioInput) Validate() error {
-	return validate.Struct(t)
+	return validation.ValidateStruct(t)
 }

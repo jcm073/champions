@@ -3,13 +3,13 @@ package handlers
 import (
 	"competitions/models"
 	"competitions/repository"
+	"competitions/validation"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -34,22 +34,10 @@ func (h *TorneioHandler) CreateTorneio(c *gin.Context) {
 
 	// Validação aprimorada dos dados de entrada
 	if err := input.Validate(); err != nil {
-		// Melhora a resposta de erro de validação para ser mais amigável ao cliente.
-		var validationErrs validator.ValidationErrors
-		if errors.As(err, &validationErrs) {
-			errorMessages := make(map[string]string)
-			for _, fieldErr := range validationErrs {
-				// Usa o nome do campo da struct para a chave do erro e a regra que falhou.
-				errorMessages[fieldErr.Field()] = "Erro de validação na regra: " + fieldErr.Tag()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Dados inválidos.",
-				"errors":  errorMessages,
-			})
-			return
-		}
-		// Fallback para outros tipos de erro que não são de validação.
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Dados inválidos.", "error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
@@ -110,22 +98,10 @@ func (h *TorneioHandler) UpdateTorneio(c *gin.Context) {
 
 	// Validação aprimorada dos dados de entrada
 	if err := input.Validate(); err != nil {
-		// Melhora a resposta de erro de validação para ser mais amigável ao cliente.
-		var validationErrs validator.ValidationErrors
-		if errors.As(err, &validationErrs) {
-			errorMessages := make(map[string]string)
-			for _, fieldErr := range validationErrs {
-				// Usa o nome do campo da struct para a chave do erro e a regra que falhou.
-				errorMessages[fieldErr.Field()] = "Erro de validação na regra: " + fieldErr.Tag()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Dados inválidos.",
-				"errors":  errorMessages,
-			})
-			return
-		}
-		// Fallback para outros tipos de erro que não são de validação.
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Dados inválidos.", "error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
 		return
 	}
 
