@@ -39,7 +39,7 @@ BEGIN
         CREATE TYPE tipo_mao_enum AS ENUM ('destro', 'canhoto');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'esporte_enum') THEN
-        CREATE TYPE esporte_enum AS ENUM ('Beach Tenis','Tenis de Mesa','Tenis','Pickleball');
+        CREATE TYPE esporte_enum AS ENUM ('Beach Tenis','Tenis de Mesa','Tenis','Pickleball', 'Squash', 'Badminton', 'Padel');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_modalidade_enum') THEN
         CREATE TYPE tipo_modalidade_enum AS ENUM ('simples','duplas');

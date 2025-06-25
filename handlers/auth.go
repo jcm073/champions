@@ -1,14 +1,23 @@
 package handlers
 
 import (
-	"competitions/config"
 	"competitions/models"
-	"context"
+	"competitions/repository"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// AuthHandler holds dependencies for authentication handlers.
+type AuthHandler struct {
+	userRepo repository.UsuarioRepository
+}
+
+// NewAuthHandler creates a new AuthHandler.
+func NewAuthHandler(userRepo repository.UsuarioRepository) *AuthHandler {
+	return &AuthHandler{userRepo: userRepo}
+}
 
 // Signup handles user registration
 // It hashes the password and stores the user in the database
@@ -22,36 +31,40 @@ import (
 // @Success      201  {object}  gin.H{"message": "Usuario criado com sucesso", "usuario": models.Usuario, "token": string}
 // @Failure      400  {object}  gin.H{"error": "Error message"}
 // @Failure      500  {object}  gin.H{"error": "Error message"}
-func Signup(c *gin.Context) {
-	var usuario models.Usuario
+func (h *AuthHandler) Signup(c *gin.Context) {
+	var input models.UsuarioInput
 
-	if err := c.ShouldBindJSON(&usuario); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error ShouldBindJSON": err.Error()})
 		return
 	}
 
 	// Verificar se a senha foi enviada
-	if usuario.Password == "" {
+	if input.Password == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password é obrigatório"})
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usuario.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível gerar o hash da senha"})
 		return
 	}
-	usuario.Password = string(hashedPassword)
 
-	query := `
-		INSERT INTO usuarios (tipo, nome, username, cpf, data_nascimento, email, password, telefone, instagram, ativo)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id
-		`
-	var id int64 // Alterado para int64
-	err = config.DB.QueryRow(context.Background(), query,
-		usuario.Tipo, usuario.Nome, usuario.Username, usuario.CPF, usuario.DataNascimento,
-		usuario.Email, usuario.Password, usuario.Telefone, usuario.Instagram, usuario.Ativo).Scan(&id)
+	usuario := models.Usuario{
+		Tipo:           input.Tipo,
+		Nome:           input.Nome,
+		Username:       input.Username,
+		CPF:            input.CPF,
+		DataNascimento: input.DataNascimento,
+		Email:          input.Email,
+		Password:       string(hashedPassword),
+		Telefone:       input.Telefone,
+		Instagram:      input.Instagram,
+		Ativo:          *input.Ativo,
+	}
+
+	err = h.userRepo.Create(c.Request.Context(), &usuario)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o usuario: " + err.Error()})
 		return

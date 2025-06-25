@@ -1,8 +1,7 @@
 package utils
 
 import (
-	"competitions/config"
-	"competitions/models"
+	"competitions/repository"
 	"context"
 	"log"
 	"os"
@@ -16,7 +15,7 @@ import (
 )
 
 // Retorna o middleware configurado do gin-jwt
-func JwtMiddleware() (*jwt.GinJWTMiddleware, error) {
+func JwtMiddleware(userRepo repository.UsuarioRepository) (*jwt.GinJWTMiddleware, error) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Aviso: .env não encontrado ou não pôde ser carregado")
@@ -56,16 +55,9 @@ func JwtMiddleware() (*jwt.GinJWTMiddleware, error) {
 			email := loginData.Email
 			password := loginData.Password
 
-			query := `
-				SELECT id, username, email, password
-				FROM usuarios
-				WHERE email = $1
-			`
-			var user models.Usuario
-			err := config.DB.QueryRow(context.Background(), query, email).
-				Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+			user, err := userRepo.FindByEmail(context.Background(), email)
 			if err != nil {
-				log.Default().Println("Erro ao buscar usuário por email:", err)
+				log.Printf("Erro ao buscar usuário por email '%s': %v", email, err)
 				return nil, jwt.ErrFailedAuthentication
 			}
 
