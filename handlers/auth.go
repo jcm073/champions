@@ -3,75 +3,88 @@ package handlers
 import (
 	"competitions/models"
 	"competitions/repository"
-	"net/http"
+	"errors"
+	"log"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// AuthHandler holds dependencies for authentication handlers.
 type AuthHandler struct {
-	userRepo repository.UsuarioRepository
+	UserRepo repository.UsuarioRepository
 }
 
-// NewAuthHandler creates a new AuthHandler.
 func NewAuthHandler(userRepo repository.UsuarioRepository) *AuthHandler {
-	return &AuthHandler{userRepo: userRepo}
+	return &AuthHandler{UserRepo: userRepo}
 }
 
-// Signup handles user registration
-// It hashes the password and stores the user in the database
-// It returns a JWT token upon successful registration
-// @Summary      Signup
-// @Description  Register a new user with hashed password
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        usuario body models.Usuario true "Dados do usuário"
-// @Success      201  {object}  gin.H{"message": "Usuario criado com sucesso", "usuario": models.Usuario, "token": string}
-// @Failure      400  {object}  gin.H{"error": "Error message"}
-// @Failure      500  {object}  gin.H{"error": "Error message"}
-func (h *AuthHandler) Signup(c *gin.Context) {
-	var input models.UsuarioInput
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error ShouldBindJSON": err.Error()})
-		return
-	}
-
-	// Verificar se a senha foi enviada
-	if input.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password é obrigatório"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível gerar o hash da senha"})
-		return
-	}
-
-	usuario := models.Usuario{
-		Tipo:           input.Tipo,
-		Nome:           input.Nome,
-		Username:       input.Username,
-		CPF:            input.CPF,
-		DataNascimento: input.DataNascimento,
-		Email:          input.Email,
-		Password:       string(hashedPassword),
-		Telefone:       input.Telefone,
-		Instagram:      input.Instagram,
-		Ativo:          *input.Ativo,
-	}
-
-	err = h.userRepo.Create(c.Request.Context(), &usuario)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o usuario: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso"})
+type login struct {
+	Email    string `form:"email" json:"email" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
 }
 
-// Logout handles user logout
-// It clears the JWT token cookie
+var identityKey = "user_id"
+
+// Login é a função autenticadora para o middleware JWT.
+func (h *AuthHandler) Login(c *gin.Context) (interface{}, error) {
+	var loginVals login
+	if err := c.ShouldBind(&loginVals); err != nil {
+		return "", jwt.ErrMissingLoginValues
+	}
+	email := loginVals.Email
+	password := loginVals.Password
+
+	user, err := h.UserRepo.FindByEmail(c.Request.Context(), email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, jwt.ErrFailedAuthentication
+		}
+		log.Printf("Erro ao buscar usuário por e-mail '%s': %v", email, err)
+		return nil, jwt.ErrFailedAuthentication
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, jwt.ErrFailedAuthentication
+	}
+
+	return user, nil
+}
+
+// Payload é a função que define o que vai dentro do token JWT.
+func (h *AuthHandler) Payload(data interface{}) jwt.MapClaims {
+	if v, ok := data.(*models.Usuario); ok {
+		return jwt.MapClaims{
+			identityKey: v.ID,
+			"type":      v.Tipo,
+		}
+	}
+	return jwt.MapClaims{}
+}
+
+// IdentityHandler extrai a identidade do usuário do token.
+func (h *AuthHandler) IdentityHandler(c *gin.Context) interface{} {
+	claims := jwt.ExtractClaims(c)
+	return &models.Usuario{
+		ID:   uint(claims[identityKey].(float64)),
+		Tipo: claims["type"].(string),
+	}
+}
+
+// Authorizator verifica se o usuário tem permissão para acessar a rota.
+func (h *AuthHandler) Authorizator(data interface{}, c *gin.Context) bool {
+	if _, ok := data.(*models.Usuario); ok {
+		return true
+	}
+	return false
+}
+
+// Unauthorized é chamado quando a autenticação falha.
+func (h *AuthHandler) Unauthorized(c *gin.Context, code int, message string) {
+	c.JSON(code, gin.H{
+		"code":    code,
+		"message": message,
+	})
+}

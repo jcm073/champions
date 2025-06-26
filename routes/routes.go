@@ -2,66 +2,58 @@ package routes
 
 import (
 	"competitions/handlers"
-	"competitions/repository"
-	"competitions/utils"
-	"log"
+	"errors"
+	"time"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(
-	router *gin.Engine,
-	authHandler *handlers.AuthHandler,
-	userHandler *handlers.UsuarioHandler,
-	torneioHandler *handlers.TorneioHandler,
-	esporteHandler *handlers.EsporteHandler,
-	userRepo repository.UsuarioRepository,
-) {
-	jwtMiddleware, err := utils.JwtMiddleware(userRepo)
-	if err != nil {
-		log.Fatal("JWT Error:" + err.Error())
-	}
+var identityKey = "user_id"
 
-	router.POST("/login", jwtMiddleware.LoginHandler)
-	router.POST("/signup", authHandler.Signup) // Adicionando a rota de signup
+// RegisterRoutes configura todas as rotas da aplicação, incluindo o middleware de autenticação.
+func RegisterRoutes(router *gin.Engine, userHandler *handlers.UsuarioHandler, torneioHandler *handlers.TorneioHandler, esporteHandler *handlers.EsporteHandler, authHandler *handlers.AuthHandler, jwtSecret string) {
 
-	auth := router.Group("/api")
-	auth.Use(jwtMiddleware.MiddlewareFunc())
-	{
-		auth.POST("/usuarios", userHandler.CreateUsuario) // Rota para admin criar usuários
-		auth.GET("/usuarios", userHandler.GetUsuarios)
-		auth.GET("/usuarios/:id", userHandler.GetUsuarioByID)
-		auth.PUT("/usuarios/:id", userHandler.UpdateUsuario)
-		auth.DELETE("/usuarios/:id", userHandler.DeleteUsuario)
-
-		// Rota segura para o usuário logado alterar sua própria senha.
-		auth.PUT("/me/password", userHandler.ChangePassword)
-
-		// Rotas de Torneio
-		auth.POST("/torneios", torneioHandler.CreateTorneio)
-		auth.GET("/torneios", torneioHandler.GetTorneios)
-		auth.GET("/torneios/:id", torneioHandler.GetTorneioByID)
-		auth.PUT("/torneios/:id", torneioHandler.UpdateTorneio)
-		auth.DELETE("/torneios/:id", torneioHandler.DeleteTorneio)
-
-		// Rotas de Esportes (CRUD)
-		// Geralmente, estas rotas devem ser protegidas e acessíveis apenas por administradores.
-		auth.POST("/esportes", esporteHandler.CreateEsporte)
-		auth.GET("/esportes", esporteHandler.GetEsportes)
-		auth.GET("/esportes/:id", esporteHandler.GetEsporteByID)
-		auth.PUT("/esportes/:id", esporteHandler.UpdateEsporte)
-		auth.DELETE("/esportes/:id", esporteHandler.DeleteEsporte)
-	}
-
-	// Rota de logout
-	auth.GET("/logout", jwtMiddleware.LogoutHandler)
-	// Rota de refresh token
-	auth.GET("/refresh_token", jwtMiddleware.RefreshHandler)
-	// Rota de health check
-	auth.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "OK",
-			"message": "API is running",
-		})
+	// Inicializa o middleware JWT.
+	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
+		Realm:           "test zone",
+		Key:             []byte(jwtSecret),
+		Timeout:         time.Hour,
+		MaxRefresh:      time.Hour,
+		IdentityKey:     identityKey,
+		PayloadFunc:     authHandler.Payload,
+		IdentityHandler: authHandler.IdentityHandler,
+		Authenticator:   authHandler.Login,
+		Authorizator:    authHandler.Authorizator,
+		Unauthorized:    authHandler.Unauthorized,
+		// HTTPStatusMessageFunc é usado para customizar as mensagens de erro.
+		HTTPStatusMessageFunc: func(e error, c *gin.Context) string {
+			switch {
+			case errors.Is(e, jwt.ErrMissingLoginValues):
+				return "É necessário fornecer e-mail e senha."
+			case errors.Is(e, jwt.ErrFailedAuthentication):
+				return "E-mail ou senha incorretos."
+			}
+			return e.Error()
+		},
 	})
+
+	if err != nil {
+		panic("JWT Error: " + err.Error())
+	}
+
+	// Rotas públicas
+	router.POST("/login", authMiddleware.LoginHandler)
+	router.POST("/signup", userHandler.CreateUsuario)
+
+	// Rotas protegidas
+	api := router.Group("/api")
+	api.Use(authMiddleware.MiddlewareFunc())
+	{
+		// Adicione suas rotas protegidas aqui
+		api.GET("/usuarios", userHandler.GetUsuarios)
+		api.POST("/usuarios/:id/esportes", userHandler.AssociateEsporte)
+		api.GET("/torneios", torneioHandler.GetTorneios)
+		// ... etc
+	}
 }

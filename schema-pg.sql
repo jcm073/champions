@@ -545,3 +545,18 @@ CREATE TRIGGER trigger_atualizar_estatisticas_scout_jogo
 AFTER INSERT OR UPDATE OR DELETE ON jogos -- Adicionado UPDATE e DELETE para considerar esses casos
 FOR EACH ROW
 EXECUTE FUNCTION atualizar_estatisticas_scout_jogo_completo();
+
+-- SEÇÃO 23: INSERÇÃO DE DADOS INICIAIS (SEEDING)
+-- Esta seção é para popular tabelas com dados essenciais que são necessários para o funcionamento da aplicação.
+
+-- Inserir os esportes definidos no ENUM na tabela de esportes.
+-- O uso de 'ON CONFLICT (nome) DO NOTHING' garante que a execução repetida deste script não causará erros de duplicidade.
+INSERT INTO esportes (nome) VALUES
+('Beach Tenis'),
+('Tenis de Mesa'),
+('Tenis'),
+('Pickleball'),
+('Squash'),
+('Badminton'),
+('Padel')
+ON CONFLICT (nome) DO NOTHING;

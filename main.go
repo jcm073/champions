@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,11 @@ func main() {
 	config.ConnectDatabase()
 	if config.DB == nil {
 		log.Fatal("Falha ao conectar ao banco de dados")
+	}
+	// Carrega a chave secreta do JWT do ambiente
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("Variável de ambiente JWT_SECRET não definida.")
 	}
 
 	// 1. Instanciar Repositórios
@@ -38,7 +44,7 @@ func main() {
 		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}))
 	// Registra as rotas, passando os handlers e repositórios necessários
-	routes.RegisterRoutes(router, authHandler, userHandler, torneioHandler, esporteHandler, userRepo)
+	routes.RegisterRoutes(router, userHandler, torneioHandler, esporteHandler, authHandler, jwtSecret)
 	// Inicia o servidor
 	// Escuta e serve na porta 8080
 	if err := router.Run(":8080"); err != nil {

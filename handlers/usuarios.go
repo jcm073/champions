@@ -139,7 +139,31 @@ func (h *UsuarioHandler) UpdateUsuario(c *gin.Context) {
 		return
 	}
 
-	rowsAffected, err := h.repo.Update(c.Request.Context(), idInt, &input)
+	// 1. Buscar o usuário existente
+	existingUser, err := h.repo.FindByID(c.Request.Context(), idInt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Usuário não encontrado para atualizar"})
+			return
+		}
+		log.Printf("Erro ao buscar usuário %d para atualização: %v", idInt, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro ao buscar o usuário."})
+		return
+	}
+
+	// 2. Atualizar os campos do usuário existente com os dados da entrada
+	existingUser.Tipo = input.Tipo
+	existingUser.Nome = input.Nome
+	existingUser.Username = input.Username
+	existingUser.CPF = input.CPF
+	existingUser.DataNascimento = input.DataNascimento
+	existingUser.Email = input.Email
+	existingUser.Telefone = input.Telefone
+	existingUser.Instagram = input.Instagram
+	existingUser.Ativo = *input.Ativo // Dereference the pointer
+
+	// 3. Chamar o repositório para atualizar o usuário
+	rowsAffected, err := h.repo.Update(c.Request.Context(), existingUser)
 	if err != nil {
 		log.Printf("Erro ao atualizar usuário %d: %v", idInt, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro ao atualizar o usuário."})
@@ -263,6 +287,50 @@ func (h *UsuarioHandler) ChangePassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Senha atualizada com sucesso."})
+}
+
+// AssociateEsporte associa um jogador a um esporte.
+func (h *UsuarioHandler) AssociateEsporte(c *gin.Context) {
+	// 1. Obter o ID do usuário da URL.
+	userID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuário inválido"})
+		return
+	}
+
+	// 2. Obter os IDs dos esportes do corpo da requisição.
+	var input models.EsporteAssociationInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 3. Validar a entrada.
+	if err := input.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Dados inválidos.",
+			"errors":  validation.TranslateError(err),
+		})
+		return
+	}
+
+	// 4. Chamar o repositório para criar a associação.
+	err = h.repo.AssociateEsporte(c.Request.Context(), userID, input.EsporteIDs)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrJogadorNaoEncontrado):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case errors.Is(err, repository.ErrEsporteInvalido):
+			// Retorna 400 Bad Request, pois o cliente enviou dados inválidos (IDs de esporte que não existem).
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			log.Printf("Erro ao associar esporte ao usuário %d: %v", userID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ocorreu um erro ao processar a associação."})
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Jogador(es) associado(s) ao(s) esporte(s) com sucesso."})
 }
 
 // The above code is an implementation of handlers for managing usuarios in a web application using Gin and a PostgreSQL database.
