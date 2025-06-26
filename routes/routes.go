@@ -2,58 +2,66 @@ package routes
 
 import (
 	"competitions/handlers"
-	"errors"
-	"time"
+	"competitions/middleware"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"github.com/gin-gonic/gin"
 )
 
-var identityKey = "user_id"
+// RegisterRoutes configura todas as rotas da aplicação.
+func RegisterRoutes(
+	router *gin.Engine,
+	userHandler *handlers.UsuarioHandler,
+	torneioHandler *handlers.TorneioHandler,
+	esporteHandler *handlers.EsporteHandler,
+	authHandler *handlers.AuthHandler,
+	jwtSecret string,
+) {
+	// Rota para a documentação Swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-// RegisterRoutes configura todas as rotas da aplicação, incluindo o middleware de autenticação.
-func RegisterRoutes(router *gin.Engine, userHandler *handlers.UsuarioHandler, torneioHandler *handlers.TorneioHandler, esporteHandler *handlers.EsporteHandler, authHandler *handlers.AuthHandler, jwtSecret string) {
+	// Middleware de autenticação JWT
+	// Passa authHandler para o middleware para que ele possa usar authHandler.Login como Authenticator
+	authMiddleware := middleware.AuthMiddleware(jwtSecret, authHandler)
 
-	// Inicializa o middleware JWT.
-	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:           "test zone",
-		Key:             []byte(jwtSecret),
-		Timeout:         time.Hour,
-		MaxRefresh:      time.Hour,
-		IdentityKey:     identityKey,
-		PayloadFunc:     authHandler.Payload,
-		IdentityHandler: authHandler.IdentityHandler,
-		Authenticator:   authHandler.Login,
-		Authorizator:    authHandler.Authorizator,
-		Unauthorized:    authHandler.Unauthorized,
-		// HTTPStatusMessageFunc é usado para customizar as mensagens de erro.
-		HTTPStatusMessageFunc: func(e error, c *gin.Context) string {
-			switch {
-			case errors.Is(e, jwt.ErrMissingLoginValues):
-				return "É necessário fornecer e-mail e senha."
-			case errors.Is(e, jwt.ErrFailedAuthentication):
-				return "E-mail ou senha incorretos."
-			}
-			return e.Error()
-		},
-	})
-
-	if err != nil {
-		panic("JWT Error: " + err.Error())
+	// Rotas de Autenticação (públicas)
+	authRoutes := router.Group("/auth")
+	{
+		authRoutes.POST("/login", authMiddleware.LoginHandler) // Use o LoginHandler fornecido pelo middleware JWT
 	}
 
-	// Rotas públicas
-	router.POST("/login", authMiddleware.LoginHandler)
-	router.POST("/signup", userHandler.CreateUsuario)
-
-	// Rotas protegidas
-	api := router.Group("/api")
-	api.Use(authMiddleware.MiddlewareFunc())
+	// Rotas de Usuários
+	userRoutes := router.Group("/usuarios")
+	userRoutes.Use(authMiddleware.MiddlewareFunc()) // Proteger rotas de usuário
 	{
-		// Adicione suas rotas protegidas aqui
-		api.GET("/usuarios", userHandler.GetUsuarios)
-		api.POST("/usuarios/:id/esportes", userHandler.AssociateEsporte)
-		api.GET("/torneios", torneioHandler.GetTorneios)
-		// ... etc
+		userRoutes.POST("", userHandler.CreateUsuario)
+		userRoutes.GET("", userHandler.GetUsuarios)
+		userRoutes.GET("/:id", userHandler.GetUsuarioByID)
+		userRoutes.PUT("/:id", userHandler.UpdateUsuario)
+		userRoutes.DELETE("/:id", userHandler.DeleteUsuario)
+		userRoutes.PUT("/:id/change-password", userHandler.ChangePassword) // Ativar rota de mudança de senha
+		userRoutes.POST("/:id/associar-esporte", userHandler.AssociateEsporte)
+	}
+
+	// Rotas de Torneios
+	torneioRoutes := router.Group("/torneios")
+	torneioRoutes.Use(authMiddleware.MiddlewareFunc()) // Proteger rotas de torneio
+	{
+		torneioRoutes.POST("", torneioHandler.CreateTorneio)
+		torneioRoutes.GET("", torneioHandler.GetTorneios)
+		torneioRoutes.GET("/:id", torneioHandler.GetTorneioByID)
+		torneioRoutes.PUT("/:id", torneioHandler.UpdateTorneio)
+		torneioRoutes.DELETE("/:id", torneioHandler.DeleteTorneio)
+		torneioRoutes.POST("/:id/inscrever", torneioHandler.InscreverJogador)
+		torneioRoutes.GET("/:id/inscricoes", torneioHandler.ListarInscricoes) // <-- NOVA ROTA
+	}
+
+	// Rotas de Esportes
+	esporteRoutes := router.Group("/esportes")
+	esporteRoutes.Use(authMiddleware.MiddlewareFunc())
+	{
+		esporteRoutes.GET("", esporteHandler.GetEsportes)
 	}
 }

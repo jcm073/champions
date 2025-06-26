@@ -38,6 +38,9 @@ func init() {
 		}
 		return name
 	})
+
+	// Registra validadores customizados
+	validate.RegisterValidation("user_type", validateUserType)
 }
 
 // ValidateStruct executa a validação em qualquer struct passada.
@@ -56,4 +59,14 @@ func TranslateError(err error) map[string]string {
 		errorMessages[e.Field()] = e.Translate(trans)
 	}
 	return errorMessages
+}
+
+// validateUserType é uma função de validação customizada para o tipo de usuário.
+func validateUserType(fl validator.FieldLevel) bool {
+	userType := fl.Field().String()
+	switch userType {
+	case "organizador", "jogador":
+		return true
+	}
+	return false
 }

@@ -1,0 +1,389 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Esta é uma API para gerenciar torneios incluindo esportes, equipes e usuários.",
+        "title": "API para Gerenciamento de Campeonatos",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "João Martins",
+            "email": "jmartins@email.com"
+        },
+        "license": {
+            "name": "BSD-3-Clause",
+            "url": "http://www.bsd.org/licenses/bsd-3-clause"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {},
+    "definitions": {
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Mensagem de erro"
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "expire": {
+                    "type": "string",
+                    "example": "2025-06-27T10:50:43-03:00"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0eXBlIjoiam9nYWRvciIsImV4cCI6MTcxOTQ5OTg0Mywib3JpZ19pYXQiOjE3MTkzMjcwNDN9.some_signature"
+                }
+            }
+        },
+        "handlers.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operação realizada com sucesso"
+                }
+            }
+        },
+        "handlers.login": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChangePasswordInput": {
+            "description": "ChangePasswordInput é uma estrutura que contém os dados necessários para mudar a senha de um usuário.",
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 8
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.EsporteAssociationInput": {
+            "type": "object",
+            "required": [
+                "esporte_ids"
+            ],
+            "properties": {
+                "esporte_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "models.JogadorTorneio": {
+            "description": "JogadorTorneio é uma estrutura que representa a inscrição de um jogador ou dupla em um torneio.",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "id_categoria": {
+                    "type": "integer"
+                },
+                "id_dupla": {
+                    "description": "Ponteiro para permitir nulo",
+                    "type": "integer"
+                },
+                "id_jogador": {
+                    "description": "Ponteiro para permitir nulo",
+                    "type": "integer"
+                },
+                "id_torneio": {
+                    "type": "integer"
+                },
+                "tipo_modalidade": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.JogadorTorneioInput": {
+            "description": "JogadorTorneioInput é uma estrutura que contém os dados necessários para inscrever um jogador ou dupla em um torneio.",
+            "type": "object",
+            "required": [
+                "id_categoria",
+                "tipo_modalidade"
+            ],
+            "properties": {
+                "id_categoria": {
+                    "type": "integer"
+                },
+                "id_dupla": {
+                    "type": "integer"
+                },
+                "id_jogador": {
+                    "type": "integer"
+                },
+                "tipo_modalidade": {
+                    "type": "string",
+                    "enum": [
+                        "simples",
+                        "duplas"
+                    ]
+                },
+                "torneio_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Torneio": {
+            "description": "Torneio é uma estrutura que representa um torneio esportivo.",
+            "type": "object",
+            "properties": {
+                "criado_em": {
+                    "type": "string"
+                },
+                "data_fim": {
+                    "type": "string"
+                },
+                "data_inicio": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "id_cidade": {
+                    "type": "integer"
+                },
+                "id_esporte": {
+                    "type": "integer"
+                },
+                "id_estado": {
+                    "type": "integer"
+                },
+                "id_pais": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TorneioInput": {
+            "description": "TorneioInput é uma estrutura que contém os dados necessários para criar ou atualizar um torneio.",
+            "type": "object",
+            "required": [
+                "data_fim",
+                "data_inicio",
+                "id_cidade",
+                "id_esporte",
+                "id_estado",
+                "id_pais",
+                "nome"
+            ],
+            "properties": {
+                "data_fim": {
+                    "type": "string"
+                },
+                "data_inicio": {
+                    "type": "string"
+                },
+                "id_cidade": {
+                    "type": "integer"
+                },
+                "id_esporte": {
+                    "type": "integer"
+                },
+                "id_estado": {
+                    "type": "integer"
+                },
+                "id_pais": {
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "models.UpdateUsuarioInput": {
+            "description": "UpdateUsuarioInput é uma estrutura que contém os dados necessários para atualizar um usuário existente.",
+            "type": "object",
+            "required": [
+                "ativo",
+                "cpf",
+                "data_nascimento",
+                "email",
+                "nome",
+                "telefone",
+                "tipo",
+                "username"
+            ],
+            "properties": {
+                "ativo": {
+                    "type": "boolean"
+                },
+                "cpf": {
+                    "type": "string",
+                    "maxLength": 14
+                },
+                "data_nascimento": {
+                    "description": "Formato: \"YYYY-MM-DD\"",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "instagram": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "nome": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "telefone": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 9
+                },
+                "tipo": {
+                    "type": "string",
+                    "enum": [
+                        "jogador",
+                        "usuario",
+                        "admin",
+                        "gestor_clube",
+                        "gestor_torneio"
+                    ]
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "models.Usuario": {
+            "type": "object",
+            "properties": {
+                "ativo": {
+                    "type": "boolean"
+                },
+                "cpf": {
+                    "type": "string"
+                },
+                "criado_em": {
+                    "type": "string"
+                },
+                "data_nascimento": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instagram": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "telefone": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UsuarioInput": {
+            "description": "UsuarioInput é uma estrutura que contém os dados necessários para criar um novo usuário.",
+            "type": "object",
+            "required": [
+                "ativo",
+                "cpf",
+                "data_nascimento",
+                "email",
+                "nome",
+                "password",
+                "telefone",
+                "tipo",
+                "username"
+            ],
+            "properties": {
+                "ativo": {
+                    "type": "boolean"
+                },
+                "cpf": {
+                    "type": "string",
+                    "maxLength": 14
+                },
+                "data_nascimento": {
+                    "description": "Formato: \"YYYY-MM-DD\" para compatibilidade com o tipo DATE do SQL",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "instagram": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "nome": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 8
+                },
+                "telefone": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 9
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

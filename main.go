@@ -9,9 +9,32 @@ import (
 
 	"competitions/config"
 	"competitions/handlers"
+	"competitions/middleware"
 	"competitions/repository"
 	"competitions/routes"
+
+	_ "competitions/docs" // Importa os docs gerados pelo swag
 )
+
+//	@title			API para Gerenciamento de Campeonatos
+//	@version		1.0
+//	@description	Esta é uma API para gerenciar torneios incluindo esportes, equipes e usuários.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	João Martins
+//	@contact.email	jmartins@email.com
+
+//	@license.name		BSD-3-Clause
+//	@license.version	3.0
+//	@license.url		http://www.bsd.org/licenses/bsd-3-clause
+
+//	@host		localhost:8080
+//	@BasePath	/
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	// Conecta ao banco de dados PostgreSQL
@@ -43,6 +66,9 @@ func main() {
 		AllowAllOrigins: true, // Permitir todas as origens (mudar em produção!)
 		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}))
+
+	// Adiciona o middleware de tratamento de erros
+	router.Use(middleware.ErrorHandler())
 	// Registra as rotas, passando os handlers e repositórios necessários
 	routes.RegisterRoutes(router, userHandler, torneioHandler, esporteHandler, authHandler, jwtSecret)
 	// Inicia o servidor

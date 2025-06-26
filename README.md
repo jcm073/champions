@@ -143,8 +143,77 @@ air -c .air.toml ou apenas digite air
 
 # Exemplos de Insert de um Torneio
 {
-  "id_esporte": 1,
-  "nome": "Segundo Torneio Patricia Medrado de Pickball Masters",
-  "descricao": "Torneio de Pickball Masters",
-  "quantidade_quadras": 3
+  "nome": "Torneio Aberto de Tênis 2024",
+  "data_inicio": "2024-08-01T09:00:00Z",
+  "data_fim": "2024-08-05T18:00:00Z",
+  "id_esporte": 3,
+  "id_cidade": 1,
+  "id_estado": 1,
+  "id_pais": 1
 }
+
+
+
+-- Inserir países
+INSERT INTO paises (nome) VALUES
+('Brasil'),
+('Estados Unidos'),
+('Argentina')
+ON CONFLICT (nome) DO NOTHING;
+
+-- Inserir estados (referenciando o ID do país)
+-- É importante que os países já existam.
+-- Usamos subconsultas para obter os IDs dos países de forma dinâmica.
+INSERT INTO estados (nome, sigla, id_pais) VALUES
+('São Paulo', 'SP', (SELECT id FROM paises WHERE nome = 'Brasil')),
+('Rio de Janeiro', 'RJ', (SELECT id FROM paises WHERE nome = 'Brasil')),
+('Minas Gerais', 'MG', (SELECT id FROM paises WHERE nome = 'Brasil')),
+('Florida', 'FL', (SELECT id FROM paises WHERE nome = 'Estados Unidos')),
+('California', 'CA', (SELECT id FROM paises WHERE nome = 'Estados Unidos')),
+('Buenos Aires', 'BA', (SELECT id FROM paises WHERE nome = 'Argentina'))
+ON CONFLICT (nome, id_pais) DO NOTHING;
+
+-- Inserir cidades (referenciando o ID do estado)
+-- É importante que os estados já existam.
+-- Usamos subconsultas para obter os IDs dos estados de forma dinâmica.
+INSERT INTO cidades (nome, id_estado) VALUES
+('São Paulo', (SELECT id FROM estados WHERE nome = 'São Paulo' AND id_pais = (SELECT id FROM paises WHERE nome = 'Brasil'))),
+('Campinas', (SELECT id FROM estados WHERE nome = 'São Paulo' AND id_pais = (SELECT id FROM paises WHERE nome = 'Brasil'))),
+('Rio de Janeiro', (SELECT id FROM estados WHERE nome = 'Rio de Janeiro' AND id_pais = (SELECT id FROM paises WHERE nome = 'Brasil'))),
+('Niterói', (SELECT id FROM estados WHERE nome = 'Rio de Janeiro' AND id_pais = (SELECT id FROM paises WHERE nome = 'Brasil'))),
+('Belo Horizonte', (SELECT id FROM estados WHERE nome = 'Minas Gerais' AND id_pais = (SELECT id FROM paises WHERE nome = 'Brasil'))),
+('Orlando', (SELECT id FROM estados WHERE nome = 'Florida' AND id_pais = (SELECT id FROM paises WHERE nome = 'Estados Unidos'))),
+('Miami', (SELECT id FROM estados WHERE nome = 'Florida' AND id_pais = (SELECT id FROM paises WHERE nome = 'Estados Unidos'))),
+('Los Angeles', (SELECT id FROM estados WHERE nome = 'California' AND id_pais = (SELECT id FROM paises WHERE nome = 'Estados Unidos'))),
+('San Francisco', (SELECT id FROM estados WHERE nome = 'California' AND id_pais = (SELECT id FROM paises WHERE nome = 'Estados Unidos'))),
+('La Plata', (SELECT id FROM estados WHERE nome = 'Buenos Aires' AND id_pais = (SELECT id FROM paises WHERE nome = 'Argentina')))
+ON CONFLICT (nome, id_estado) DO NOTHING;
+
+-- Inserir níveis (exemplo)
+INSERT INTO niveis (nome) VALUES
+('Iniciante'),
+('Intermediário'),
+('Avançado'),
+('Profissional'),
+('A'),
+('B'),
+('C'),
+('D'),
+('E'),
+('F')
+ON CONFLICT (nome) DO NOTHING;
+
+-- Inserir tipos de categoria (exemplo)
+INSERT INTO tipos_categoria (nome) VALUES
+('Masculino'),
+('Feminino'),
+('Misto'),
+('Infantil'),
+('Juvenil'),
+('Adulto'),
+('Sênior'),
+('masters'),
+('duplas masculinas'),
+('duplas femininas'),
+('duplas mistas')
+ON CONFLICT (nome) DO NOTHING;
