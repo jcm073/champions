@@ -1,0 +1,286 @@
+basePath: /
+definitions:
+  handlers.ErrorResponse:
+    properties:
+      error:
+        example: Mensagem de erro
+        type: string
+    type: object
+  handlers.LoginResponse:
+    properties:
+      expire:
+        example: "2025-06-27T10:50:43-03:00"
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0eXBlIjoiam9nYWRvciIsImV4cCI6MTcxOTQ5OTg0Mywib3JpZ19pYXQiOjE3MTkzMjcwNDN9.some_signature
+        type: string
+    type: object
+  handlers.SuccessResponse:
+    properties:
+      message:
+        example: Operação realizada com sucesso
+        type: string
+    type: object
+  handlers.login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.ChangePasswordInput:
+    description: ChangePasswordInput é uma estrutura que contém os dados necessários
+      para mudar a senha de um usuário.
+    properties:
+      new_password:
+        maxLength: 255
+        minLength: 8
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  models.EsporteAssociationInput:
+    properties:
+      esporte_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - esporte_ids
+    type: object
+  models.JogadorTorneio:
+    description: JogadorTorneio é uma estrutura que representa a inscrição de um jogador
+      ou dupla em um torneio.
+    properties:
+      id:
+        type: integer
+      id_categoria:
+        type: integer
+      id_dupla:
+        description: Ponteiro para permitir nulo
+        type: integer
+      id_jogador:
+        description: Ponteiro para permitir nulo
+        type: integer
+      id_torneio:
+        type: integer
+      tipo_modalidade:
+        type: string
+    type: object
+  models.JogadorTorneioInput:
+    description: JogadorTorneioInput é uma estrutura que contém os dados necessários
+      para inscrever um jogador ou dupla em um torneio.
+    properties:
+      id_categoria:
+        type: integer
+      id_dupla:
+        type: integer
+      id_jogador:
+        type: integer
+      tipo_modalidade:
+        enum:
+        - simples
+        - duplas
+        type: string
+      torneio_id:
+        type: integer
+    required:
+    - id_categoria
+    - tipo_modalidade
+    type: object
+  models.Torneio:
+    description: Torneio é uma estrutura que representa um torneio esportivo.
+    properties:
+      criado_em:
+        type: string
+      data_fim:
+        type: string
+      data_inicio:
+        type: string
+      id:
+        type: integer
+      id_cidade:
+        type: integer
+      id_esporte:
+        type: integer
+      id_estado:
+        type: integer
+      id_pais:
+        type: integer
+      nome:
+        type: string
+    type: object
+  models.TorneioInput:
+    description: TorneioInput é uma estrutura que contém os dados necessários para
+      criar ou atualizar um torneio.
+    properties:
+      data_fim:
+        type: string
+      data_inicio:
+        type: string
+      id_cidade:
+        type: integer
+      id_esporte:
+        type: integer
+      id_estado:
+        type: integer
+      id_pais:
+        type: integer
+      nome:
+        maxLength: 100
+        type: string
+    required:
+    - data_fim
+    - data_inicio
+    - id_cidade
+    - id_esporte
+    - id_estado
+    - id_pais
+    - nome
+    type: object
+  models.UpdateUsuarioInput:
+    description: UpdateUsuarioInput é uma estrutura que contém os dados necessários
+      para atualizar um usuário existente.
+    properties:
+      ativo:
+        type: boolean
+      cpf:
+        maxLength: 14
+        type: string
+      data_nascimento:
+        description: 'Formato: "YYYY-MM-DD"'
+        type: string
+      email:
+        maxLength: 100
+        type: string
+      instagram:
+        maxLength: 50
+        type: string
+      nome:
+        maxLength: 100
+        type: string
+      telefone:
+        maxLength: 20
+        minLength: 9
+        type: string
+      tipo:
+        enum:
+        - jogador
+        - usuario
+        - admin
+        - gestor_clube
+        - gestor_torneio
+        type: string
+      username:
+        maxLength: 50
+        type: string
+    required:
+    - ativo
+    - cpf
+    - data_nascimento
+    - email
+    - nome
+    - telefone
+    - tipo
+    - username
+    type: object
+  models.Usuario:
+    properties:
+      ativo:
+        type: boolean
+      cpf:
+        type: string
+      criado_em:
+        type: string
+      data_nascimento:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      instagram:
+        type: string
+      nome:
+        type: string
+      password:
+        type: string
+      telefone:
+        type: string
+      tipo:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UsuarioInput:
+    description: UsuarioInput é uma estrutura que contém os dados necessários para
+      criar um novo usuário.
+    properties:
+      ativo:
+        type: boolean
+      cpf:
+        maxLength: 14
+        type: string
+      data_nascimento:
+        description: 'Formato: "YYYY-MM-DD" para compatibilidade com o tipo DATE do
+          SQL'
+        type: string
+      email:
+        maxLength: 100
+        type: string
+      instagram:
+        maxLength: 50
+        type: string
+      nome:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 255
+        minLength: 8
+        type: string
+      telefone:
+        maxLength: 20
+        minLength: 9
+        type: string
+      tipo:
+        type: string
+      username:
+        maxLength: 50
+        type: string
+    required:
+    - ativo
+    - cpf
+    - data_nascimento
+    - email
+    - nome
+    - password
+    - telefone
+    - tipo
+    - username
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: jmartins@email.com
+    name: João Martins
+  description: Esta é uma API para gerenciar torneios incluindo esportes, equipes
+    e usuários.
+  license:
+    name: BSD-3-Clause
+    url: http://www.bsd.org/licenses/bsd-3-clause
+  termsOfService: http://swagger.io/terms/
+  title: API para Gerenciamento de Campeonatos
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,64 +1,62 @@
 package handlers
 
 import (
-	"competitions/config"
-	"competitions/models"
-	"context"
-	"net/http"
+	"competitions/repository"
+	"errors"
+	"log"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Signup handles user registration
-// It hashes the password and stores the user in the database
-// It returns a JWT token upon successful registration
-// @Summary      Signup
-// @Description  Register a new user with hashed password
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        usuario body models.Usuario true "Dados do usuário"
-// @Success      201  {object}  gin.H{"message": "Usuario criado com sucesso", "usuario": models.Usuario, "token": string}
-// @Failure      400  {object}  gin.H{"error": "Error message"}
-// @Failure      500  {object}  gin.H{"error": "Error message"}
-func Signup(c *gin.Context) {
-	var usuario models.Usuario
-
-	if err := c.ShouldBindJSON(&usuario); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error ShouldBindJSON": err.Error()})
-		return
-	}
-
-	// Verificar se a senha foi enviada
-	if usuario.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password é obrigatório"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usuario.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível gerar o hash da senha"})
-		return
-	}
-	usuario.Password = string(hashedPassword)
-
-	query := `
-		INSERT INTO usuarios (tipo, nome, username, cpf, data_nascimento, email, password, telefone, instagram, ativo)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id
-		`
-	var id int64 // Alterado para int64
-	err = config.DB.QueryRow(context.Background(), query,
-		usuario.Tipo, usuario.Nome, usuario.Username, usuario.CPF, usuario.DataNascimento,
-		usuario.Email, usuario.Password, usuario.Telefone, usuario.Instagram, usuario.Ativo).Scan(&id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o usuario: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario criado com sucesso"})
+type AuthHandler struct {
+	UserRepo repository.UsuarioRepository
 }
 
-// Logout handles user logout
-// It clears the JWT token cookie
+func NewAuthHandler(userRepo repository.UsuarioRepository) *AuthHandler {
+	return &AuthHandler{UserRepo: userRepo}
+}
+
+// Login
+type login struct {
+	Email    string `form:"email" json:"email" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
+}
+
+// Login godoc
+//	@Summary		Autentica um usuário
+//	@Description	Autentica um usuário com e-mail e senha, retornando um token JWT em caso de sucesso.
+//	@Tags			Autenticação
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		login	true	"Credenciais de Login"
+//	@Success		200		{object}	LoginResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		401		{object}	ErrorResponse
+// Login é a função autenticadora para o middleware JWT.
+func (h *AuthHandler) Login(c *gin.Context) (any, error) {
+	var loginVals login
+	if err := c.ShouldBind(&loginVals); err != nil {
+		return "", jwt.ErrMissingLoginValues
+	}
+	email := loginVals.Email
+	password := loginVals.Password
+
+	user, err := h.UserRepo.FindByEmail(c.Request.Context(), email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, jwt.ErrFailedAuthentication
+		}
+		log.Printf("Erro ao buscar usuário por e-mail '%s': %v", email, err)
+		return nil, jwt.ErrFailedAuthentication
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, jwt.ErrFailedAuthentication
+	}
+
+	return user, nil
+}

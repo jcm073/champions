@@ -2,40 +2,66 @@ package routes
 
 import (
 	"competitions/handlers"
-	"competitions/utils"
-	"log"
+	"competitions/middleware"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(router *gin.Engine) {
-	jwtMiddleware, err := utils.JwtMiddleware()
-	if err != nil {
-		log.Fatal("JWT Error:" + err.Error())
-	}
+// RegisterRoutes configura todas as rotas da aplicação.
+func RegisterRoutes(
+	router *gin.Engine,
+	userHandler *handlers.UsuarioHandler,
+	torneioHandler *handlers.TorneioHandler,
+	esporteHandler *handlers.EsporteHandler,
+	authHandler *handlers.AuthHandler,
+	jwtSecret string,
+) {
+	// Rota para a documentação Swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.POST("/login", jwtMiddleware.LoginHandler)
-	router.POST("/signup", handlers.Signup) // Adicionando a rota de signup
+	// Middleware de autenticação JWT
+	// Passa authHandler para o middleware para que ele possa usar authHandler.Login como Authenticator
+	authMiddleware := middleware.AuthMiddleware(jwtSecret, authHandler)
 
-	auth := router.Group("/api")
-	auth.Use(jwtMiddleware.MiddlewareFunc())
+	// Rotas de Autenticação (públicas)
+	authRoutes := router.Group("/auth")
 	{
-		auth.GET("/usuarios", handlers.GetUsuarios)
-		auth.GET("/usuarios/:id", handlers.GetUsuarioByID)
-		auth.PUT("/usuarios/:id", handlers.UpdateUsuario)
-		auth.DELETE("/usuarios/:id", handlers.DeleteUsuario)
-		// ... outras rotas protegidas
+		authRoutes.POST("/login", authMiddleware.LoginHandler) // Use o LoginHandler fornecido pelo middleware JWT
 	}
 
-	// Rota de logout
-	auth.GET("/logout", jwtMiddleware.LogoutHandler)
-	// Rota de refresh token
-	auth.GET("/refresh_token", jwtMiddleware.RefreshHandler)
-	// Rota de health check
-	auth.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "OK",
-			"message": "API is running",
-		})
-	})
+	// Rotas de Usuários
+	userRoutes := router.Group("/usuarios")
+	userRoutes.Use(authMiddleware.MiddlewareFunc()) // Proteger rotas de usuário
+	{
+		userRoutes.POST("", userHandler.CreateUsuario)
+		userRoutes.GET("", userHandler.GetUsuarios)
+		userRoutes.GET("/:id", userHandler.GetUsuarioByID)
+		userRoutes.PUT("/:id", userHandler.UpdateUsuario)
+		userRoutes.DELETE("/:id", userHandler.DeleteUsuario)
+		userRoutes.PUT("/:id/change-password", userHandler.ChangePassword) // Ativar rota de mudança de senha
+		userRoutes.POST("/:id/associar-esporte", userHandler.AssociateEsporte)
+	}
+
+	// Rotas de Torneios
+	torneioRoutes := router.Group("/torneios")
+	torneioRoutes.Use(authMiddleware.MiddlewareFunc()) // Proteger rotas de torneio
+	{
+		torneioRoutes.POST("", torneioHandler.CreateTorneio)
+		torneioRoutes.GET("", torneioHandler.GetTorneios)
+		torneioRoutes.GET("/:id", torneioHandler.GetTorneioByID)
+		torneioRoutes.PUT("/:id", torneioHandler.UpdateTorneio)
+		torneioRoutes.DELETE("/:id", torneioHandler.DeleteTorneio)
+		torneioRoutes.POST("/:id/inscrever", torneioHandler.InscreverJogador)
+		torneioRoutes.GET("/:id/inscricoes", torneioHandler.ListarInscricoes) // <-- NOVA ROTA
+	}
+
+	// Rotas de Esportes
+	esporteRoutes := router.Group("/esportes")
+	esporteRoutes.Use(authMiddleware.MiddlewareFunc())
+	{
+		esporteRoutes.GET("", esporteHandler.GetEsportes)
+	}
 }

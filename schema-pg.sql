@@ -39,7 +39,7 @@ BEGIN
         CREATE TYPE tipo_mao_enum AS ENUM ('destro', 'canhoto');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'esporte_enum') THEN
-        CREATE TYPE esporte_enum AS ENUM ('Beach Tenis','Tenis de Mesa','Tenis','Pickleball');
+        CREATE TYPE esporte_enum AS ENUM ('Beach Tenis','Tenis de Mesa','Tenis','Pickleball', 'Squash', 'Badminton', 'Padel');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_modalidade_enum') THEN
         CREATE TYPE tipo_modalidade_enum AS ENUM ('simples','duplas');
@@ -91,6 +91,30 @@ CREATE TABLE IF NOT EXISTS esportes (
   nome esporte_enum NOT NULL UNIQUE
 );
 
+-- SEÇÃO 7: TABELA DE PAÍSES
+CREATE TABLE IF NOT EXISTS paises (
+  id SERIAL PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- SEÇÃO 8: TABELA DE ESTADOS
+CREATE TABLE IF NOT EXISTS estados (
+  id SERIAL PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  sigla VARCHAR(2) NOT NULL UNIQUE,
+  id_pais INT NOT NULL REFERENCES paises(id) ON DELETE CASCADE,
+  UNIQUE (nome, id_pais) -- Garante que o nome do estado seja único dentro de um país
+);
+
+-- SEÇÃO 9: TABELA DE CIDADES
+CREATE TABLE IF NOT EXISTS cidades (
+  id SERIAL PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  id_estado INT NOT NULL REFERENCES estados(id) ON DELETE CASCADE,
+  UNIQUE (nome, id_estado) -- Garante que o nome da cidade seja único dentro de um estado
+);
+
+
 -- 7. SCOUTS
 CREATE TABLE IF NOT EXISTS scouts (
   id SERIAL PRIMARY KEY, -- Esta tabela parece ser para estatísticas de jogadores
@@ -100,7 +124,7 @@ CREATE TABLE IF NOT EXISTS scouts (
   titulos INT NOT NULL DEFAULT 0
 );
 
--- 8. JOGADORES
+-- SEÇÃO 10: JOGADORES
 CREATE TABLE IF NOT EXISTS jogadores ( -- Representa um usuário que é um jogador
   id SERIAL PRIMARY KEY,
   id_usuario INT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -119,14 +143,14 @@ CREATE TABLE IF NOT EXISTS jogadores ( -- Representa um usuário que é um jogad
   ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- SEÇÃO 9: TABELA DE RELACIONAMENTO JOGADORES_ESPORTES (N:N)
+-- SEÇÃO 11: TABELA DE RELACIONAMENTO JOGADORES_ESPORTES (N:N)
 CREATE TABLE IF NOT EXISTS jogadores_esportes (
   id_jogador INT NOT NULL REFERENCES jogadores(id) ON DELETE CASCADE,
   id_esporte INT NOT NULL REFERENCES esportes(id) ON DELETE CASCADE,
   PRIMARY KEY (id_jogador, id_esporte)
 );
 
--- SEÇÃO 10: TABELA DE CLUBES
+-- SEÇÃO 12: TABELA DE CLUBES
 CREATE TABLE IF NOT EXISTS clubes (
   id SERIAL PRIMARY KEY,
   id_jogador_responsavel INT REFERENCES jogadores(id) ON DELETE SET NULL,
@@ -134,15 +158,15 @@ CREATE TABLE IF NOT EXISTS clubes (
   telefone VARCHAR(20) NOT NULL,
   whatsapp VARCHAR(20),
   instagram VARCHAR(50),
-  estado VARCHAR(50) NOT NULL,
-  cidade VARCHAR(100) NOT NULL,
-  pais VARCHAR(50) NOT NULL DEFAULT 'Brasil',
+  id_cidade INT NOT NULL REFERENCES cidades(id) ON DELETE CASCADE, -- Nova coluna
+  id_estado INT NOT NULL REFERENCES estados(id) ON DELETE CASCADE, -- Nova coluna
+  id_pais INT NOT NULL REFERENCES paises(id) ON DELETE CASCADE,
   quantidade INT NOT NULL DEFAULT 0,
   ativo BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- SEÇÃO 11: TABELA DE RELACIONAMENTO CLUBES_USUARIOS (N:N) - Jogadores em Clubes
+-- SEÇÃO 13: TABELA DE RELACIONAMENTO CLUBES_USUARIOS (N:N) - Jogadores em Clubes
 CREATE TABLE IF NOT EXISTS clubes_usuarios (
   id_clube INT NOT NULL REFERENCES clubes(id) ON DELETE CASCADE,
   id_jogador INT NOT NULL REFERENCES jogadores(id) ON DELETE CASCADE,
@@ -150,14 +174,20 @@ CREATE TABLE IF NOT EXISTS clubes_usuarios (
   PRIMARY KEY (id_clube, id_jogador)
 );
 
--- SEÇÃO 12: TABELA DE TORNEIOS
+-- SEÇÃO 14: TABELA DE TORNEIOS
 CREATE TABLE IF NOT EXISTS torneios (
   id SERIAL PRIMARY KEY,
   id_esporte INT NOT NULL REFERENCES esportes(id) ON DELETE CASCADE,
   nome VARCHAR(100) NOT NULL,
   descricao TEXT,
   quantidade_quadras INT NOT NULL DEFAULT 1,
-  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Adicionada vírgula
+  inicio TIMESTAMP NOT NULL, -- Renomeado de data_inicio
+  fim TIMESTAMP NOT NULL,    -- Renomeado de data_fim
+  id_cidade INT NOT NULL REFERENCES cidades(id) ON DELETE CASCADE, -- Nova coluna
+  id_estado INT NOT NULL REFERENCES estados(id) ON DELETE CASCADE, -- Nova coluna
+  id_pais INT NOT NULL REFERENCES paises(id) ON DELETE CASCADE,     -- Nova coluna
+  ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- SEÇÃO 13: TABELA DE DUPLAS
@@ -173,15 +203,15 @@ CREATE TABLE IF NOT EXISTS duplas (
 -- Optional: if chk_jogador_ordem is added
 -- CREATE UNIQUE INDEX IF NOT EXISTS idx_duplas_jogadores_unicos_ordenados ON duplas (id_jogador_a, id_jogador_b);
 
--- SEÇÃO 14: TABELA DE PARTICIPANTES (em torneios)
-CREATE TABLE IF NOT EXISTS participantes (
+-- SEÇÃO 14: TABELA DE jogadores_torneios (jogadores associados aos torneios)
+CREATE TABLE IF NOT EXISTS jogadores_torneios (
   id SERIAL PRIMARY KEY,
   id_torneio INT NOT NULL REFERENCES torneios(id) ON DELETE CASCADE,
   id_jogador INT REFERENCES jogadores(id) ON DELETE CASCADE,
   id_categoria INT NOT NULL REFERENCES categorias(id) ON DELETE CASCADE,
   id_dupla INT REFERENCES duplas(id) ON DELETE CASCADE,
   tipo_modalidade tipo_modalidade_enum NOT NULL DEFAULT 'simples',
-  CONSTRAINT chk_participante_modalidade_consistencia CHECK (
+  CONSTRAINT chk_jogador_torneio_modalidade_consistencia CHECK (
       (tipo_modalidade = 'simples' AND id_jogador IS NOT NULL AND id_dupla IS NULL) OR
       (tipo_modalidade = 'duplas' AND id_dupla IS NOT NULL AND id_jogador IS NULL)
   )
@@ -194,11 +224,11 @@ CREATE TABLE IF NOT EXISTS grupos (
   nome VARCHAR(50) NOT NULL
 );
 
--- SEÇÃO 16: TABELA DE RELACIONAMENTO GRUPO_PARTICIPANTES (N:N)
-CREATE TABLE IF NOT EXISTS grupo_participantes (
+-- SEÇÃO 16: TABELA DE RELACIONAMENTO GRUPO_JOGADORES_TORNEIOS (N:N)
+CREATE TABLE IF NOT EXISTS grupo_jogadores_torneios (
   id_grupo INT NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
-  id_participante INT NOT NULL REFERENCES participantes(id) ON DELETE CASCADE,
-  PRIMARY KEY (id_grupo, id_participante)
+  id_jogador_torneio INT NOT NULL REFERENCES jogadores_torneios(id) ON DELETE CASCADE,
+  PRIMARY KEY (id_grupo, id_jogador_torneio)
 );
 
 -- SEÇÃO 17: TABELA DE RODADAS (de um torneio/grupo)
@@ -213,8 +243,8 @@ CREATE TABLE IF NOT EXISTS jogos (
   id_torneio INT NOT NULL REFERENCES torneios(id) ON DELETE CASCADE,
   id_grupo INT NOT NULL REFERENCES grupos(id) ON DELETE CASCADE,
   id_rodada INT NOT NULL REFERENCES rodadas(id) ON DELETE CASCADE,
-  id_participante1 INT REFERENCES participantes(id) ON DELETE SET NULL,
-  id_participante2 INT REFERENCES participantes(id) ON DELETE SET NULL,
+  id_jogador_torneio1 INT REFERENCES jogadores_torneios(id) ON DELETE SET NULL,
+  id_jogador_torneio2 INT REFERENCES jogadores_torneios(id) ON DELETE SET NULL,
   id_dupla1 INT REFERENCES duplas(id) ON DELETE SET NULL,
   id_dupla2 INT REFERENCES duplas(id) ON DELETE SET NULL,
   id_jogador_vencedor INT REFERENCES jogadores(id) ON DELETE SET NULL,
@@ -239,8 +269,8 @@ CREATE TABLE IF NOT EXISTS placares (
 );
 
 -- SEÇÃO 20: CONSTRAINTS ADICIONAIS (ALTER TABLE)
--- Adicionar uma constraint para garantir a consistência dos dados de participantes
--- Esta constraint garante que, para jogos 'simples', os campos de jogador sejam preenchidos e os de dupla sejam nulos,
+-- Adicionar uma constraint para garantir a consistência dos dados de jogadores em torneios
+-- Esta constraint garante que, para jogos 'simples', os campos de jogador do torneio sejam preenchidos e os de dupla sejam nulos,
 -- e o oposto para jogos de 'duplas'.
 ALTER TABLE jogos
     DROP CONSTRAINT IF EXISTS chk_jogo_participantes_modalidade; -- Remover se já existir uma com nome similar
@@ -255,9 +285,11 @@ ALTER TABLE jogos
 ALTER TABLE jogos
     DROP CONSTRAINT IF EXISTS chk_jogo_definicao_participantes;
 ALTER TABLE jogos
-    ADD CONSTRAINT chk_jogo_definicao_participantes CHECK (
-        (tipo_modalidade = 'simples' AND id_participante1 IS NOT NULL AND id_participante2 IS NOT NULL AND id_dupla1 IS NULL AND id_dupla2 IS NULL) OR
-        (tipo_modalidade = 'duplas' AND id_dupla1 IS NOT NULL AND id_dupla2 IS NOT NULL AND id_participante1 IS NULL AND id_participante2 IS NULL)
+    DROP CONSTRAINT IF EXISTS chk_jogo_definicao_jogadores_torneios;
+ALTER TABLE jogos
+    ADD CONSTRAINT chk_jogo_definicao_jogadores_torneios CHECK (
+        (tipo_modalidade = 'simples' AND id_jogador_torneio1 IS NOT NULL AND id_jogador_torneio2 IS NOT NULL AND id_dupla1 IS NULL AND id_dupla2 IS NULL) OR
+        (tipo_modalidade = 'duplas' AND id_dupla1 IS NOT NULL AND id_dupla2 IS NOT NULL AND id_jogador_torneio1 IS NULL AND id_jogador_torneio2 IS NULL)
     );
 
 ALTER TABLE duplas
@@ -268,14 +300,14 @@ ALTER TABLE duplas
 CREATE INDEX IF NOT EXISTS idx_jogadores_nome ON jogadores(nome);
 CREATE INDEX IF NOT EXISTS idx_torneios_nome ON torneios(nome);
 CREATE INDEX IF NOT EXISTS idx_jogos_data_hora ON jogos(data_hora);
-CREATE INDEX IF NOT EXISTS idx_participantes_torneio ON participantes(id_torneio);
-CREATE INDEX IF NOT EXISTS idx_participantes_categoria ON participantes(id_categoria);
+CREATE INDEX IF NOT EXISTS idx_jogadores_torneios_torneio ON jogadores_torneios(id_torneio);
+CREATE INDEX IF NOT EXISTS idx_jogadores_torneios_categoria ON jogadores_torneios(id_categoria);
 CREATE INDEX IF NOT EXISTS idx_grupos_categoria ON grupos(id_categoria);
 CREATE INDEX IF NOT EXISTS idx_jogos_torneio ON jogos(id_torneio);
 CREATE INDEX IF NOT EXISTS idx_jogos_grupo ON jogos(id_grupo);
 CREATE INDEX IF NOT EXISTS idx_jogos_rodada ON jogos(id_rodada);
-CREATE INDEX IF NOT EXISTS idx_participantes_jogador ON participantes(id_jogador);
-CREATE INDEX IF NOT EXISTS idx_participantes_dupla ON participantes(id_dupla);
+CREATE INDEX IF NOT EXISTS idx_jogadores_torneios_jogador ON jogadores_torneios(id_jogador);
+CREATE INDEX IF NOT EXISTS idx_jogadores_torneios_dupla ON jogadores_torneios(id_dupla);
 CREATE INDEX IF NOT EXISTS idx_duplas_jogador_a ON duplas(id_jogador_a);
 CREATE INDEX IF NOT EXISTS idx_duplas_jogador_b ON duplas(id_jogador_b);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_duplas_jogadores_unicos_ordenados ON duplas (id_jogador_a, id_jogador_b);
@@ -545,3 +577,18 @@ CREATE TRIGGER trigger_atualizar_estatisticas_scout_jogo
 AFTER INSERT OR UPDATE OR DELETE ON jogos -- Adicionado UPDATE e DELETE para considerar esses casos
 FOR EACH ROW
 EXECUTE FUNCTION atualizar_estatisticas_scout_jogo_completo();
+
+-- SEÇÃO 23: INSERÇÃO DE DADOS INICIAIS (SEEDING)
+-- Esta seção é para popular tabelas com dados essenciais que são necessários para o funcionamento da aplicação.
+
+-- Inserir os esportes definidos no ENUM na tabela de esportes.
+-- O uso de 'ON CONFLICT (nome) DO NOTHING' garante que a execução repetida deste script não causará erros de duplicidade.
+INSERT INTO esportes (nome) VALUES
+('Badminton'),
+('Beach Tenis'),
+('Padel'),
+('Pickleball'),
+('Squash'),
+('Tenis'),
+('Tenis de Mesa')
+ON CONFLICT (nome) DO NOTHING;
