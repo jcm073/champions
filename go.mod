@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/appleboy/gin-jwt/v2 v2.10.3
+	github.com/ckanthony/gin-mcp v0.0.0-20250417182845-f4b2a61e501f
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/locales v0.14.1
@@ -21,7 +22,6 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
-	github.com/ckanthony/gin-mcp v0.0.0-20250417182845-f4b2a61e501f // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
