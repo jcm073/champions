@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	server "github.com/ckanthony/gin-mcp"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -71,6 +73,19 @@ func main() {
 	router.Use(middleware.ErrorHandler())
 	// Registra as rotas, passando os handlers e repositórios necessários
 	routes.RegisterRoutes(router, userHandler, torneioHandler, esporteHandler, authHandler, jwtSecret)
+
+	//Create and configure the MCP server
+	//Provide essential details for the MCP client.
+	mcp := server.New(router, &server.Config{
+		Name:        "Championship API",
+		Description: "An example API automatically exposed via MCP.",
+		// BaseURL is crucial! It tells MCP clients where to send requests.
+		BaseURL: "http://localhost:8080",
+	})
+
+	//Mount the MCP server endpoint
+	mcp.Mount("/mcp") // MCP clients will connect here
+
 	// Inicia o servidor
 	// Escuta e serve na porta 8080
 	if err := router.Run(":8080"); err != nil {
