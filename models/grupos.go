@@ -1,71 +1,84 @@
 package models
 
-// Grupo representa um grupo de jogadores/duplas dentro de uma categoria de um torneio.
-// Ele pode conter uma lista de JogadoresTorneio, que são os participantes desse grupo.
-// A relação entre grupos e jogadores_torneios é N:N, onde um grupo pode ter vários jogadores/duplas e um jogador/dupla pode pertencer a vários grupos.
-// A tabela de junção 'grupos_jogadores_torneios' é usada para mapear essa relação.
-// // A estrutura 'Grupo' contém o ID do grupo, o ID da categoria a que pertence e o nome do grupo.
-// Opcionalmente, pode incluir uma lista de JogadoresTorneio,
-// que pode ser preenchida com uma query separada usando a tabela de junção 'grupos_jogadores_torneios'.
-//	@Description	Grupo é uma estrutura que representa um grupo de jogadores/duplas dentro de uma categoria de um torneio.
-//	@ID				Grupo
-//	@Name			Grupo
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	Grupo
-//	@Failure		400	{object}	ErrorResponse
-//	@Failure		404	{object}	ErrorResponse
-//	@Failure		500	{object}	ErrorResponse
-//	@Router			/grupos [get]
-//	@Router			/grupos/{id} [get]
-//	@Router			/grupos [post]
-//	@Router			/grupos/{id} [put]
-//	@Router			/grupos/{id} [delete]
-//	@Tags			Grupos
-//	@Param			id		path	int			true	"ID do Grupo"
-//	@Param			grupo	body	GrupoInput	true	"Dados do Grupo"
-//	@Param			nome	query	string		false	"Nome do Grupo"
-//	@Param			page	query	int			false	"Número da página para paginação"
-//	@Param			limit	query	int			false	"Número de itens por página para paginação"
-//	@Param			sort	query	string		false	"Campo para ordenação, prefixado com '-' para ordem decrescente"
-//	@Param			search	query	string		false	"Termo de busca para filtrar grupos pelo nome"
-//	@Security		BearerAuth
+import (
+	"competitions/validation"
+	"fmt"
+)
+
+// Grupo representa um grupo de jogadores em um torneio para uma categoria específica.
 type Grupo struct {
-	ID          int    `json:"id"`
-	CategoriaID int    `json:"id_categoria"`
-	Nome        string `json:"nome"`
-	// Opcional: pode ser preenchido com uma query separada usando a tabela de junção.
-	JogadoresTorneio []JogadorTorneio `json:"jogadores_torneio,omitempty"`
+	ID          int    `json:"id" db:"id"`
+	TorneioID   int    `json:"id_torneio" db:"id_torneio"`
+	CategoriaID int    `json:"id_categoria" db:"id_categoria"`
+	Nome        string `json:"nome" db:"nome"`
 }
 
-// GrupoJogadorTorneio representa a relação N:N entre 'grupos' e 'jogadores_torneios'.
-// Ele é usado para mapear quais jogadores/duplas pertencem a quais grupos.
-// A tabela de junção 'grupos_jogadores_torneios' contém os IDs de 'grupos' e 'jogadores_torneios'.
-//	@Description	GrupoJogadorTorneio é uma estrutura que representa a relação entre um grupo e um jogador/dupla em um torneio.
-//	@ID				GrupoJogadorTorneio
-//	@Name			GrupoJogadorTorneio
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	GrupoJogadorTorneio
-//	@Failure		400	{object}	ErrorResponse
-//	@Failure		404	{object}	ErrorResponse
-//	@Failure		500	{object}	ErrorResponse
-//	@Router			/grupos_jogadores_torneios [get]
-//	@Router			/grupos_jogadores_torneios/{id} [get]
-//	@Router			/grupos_jogadores_torneios [post]
-//	@Router			/grupos_jogadores_torneios/{id} [put]
-//	@Router			/grupos_jogadores_torneios/{id} [delete]
-//	@Tags			GruposJogadoresTorneios
-//	@Param			id						path	int							true	"ID da Relação GrupoJogadorTorneio"
-//	@Param			grupo_jogador_torneio	body	GrupoJogadorTorneioInput	true	"Dados da Relação GrupoJogadorTorneio"
-//	@Param			id_grupo				query	int							false	"ID do Grupo"
-//	@Param			id_jogador_torneio		query	int							false	"ID do JogadorTorneio"
-//	@Param			page					query	int							false	"Número da página para paginação"
-//	@Param			limit					query	int							false	"Número de itens por página para paginação"
-//	@Param			sort					query	string						false	"Campo para ordenação, prefixado com '-' para ordem decrescente"
-//	@Param			search					query	string						false	"Termo de busca para filtrar relações entre grupos e jogadores/duplas"
-//	@Security		BearerAuth
-type GrupoJogadorTorneio struct {
-	GrupoID          int `json:"id_grupo"`
-	JogadorTorneioID int `json:"id_jogador_torneio"` // ANTES: id_participante
+// GrupoJogador representa a associação entre um jogador e um grupo.
+type GrupoJogador struct {
+	GrupoID   int `json:"id_grupo" db:"id_grupo"`
+	JogadorID int `json:"id_jogador" db:"id_jogador"`
+}
+
+// GrupoComJogadores é uma estrutura para retornar um grupo com a lista de seus jogadores.
+type GrupoComJogadores struct {
+	Grupo
+	Jogadores []Usuario `json:"jogadores"`
+}
+
+// CriarGruposInput define os parâmetros para a criação de grupos.
+type CriarGruposInput struct {
+	CategoriaID int `json:"id_categoria" validate:"required,gt=0"`
+}
+
+// Validate executa a validação na estrutura CriarGruposInput.
+func (c *CriarGruposInput) Validate() error {
+	return validation.ValidateStruct(c)
+}
+
+// DistributePlayers distribui os jogadores em grupos de 3 a 5.
+func DistributePlayers(playerIDs []int) ([][]int, error) {
+	totalPlayers := len(playerIDs)
+	if totalPlayers < 3 {
+		return nil, fmt.Errorf("é necessário ter no mínimo 3 jogadores para formar um grupo")
+	}
+
+	numGroups := 0
+	for i := totalPlayers / 5; i >= 0; i-- {
+		remainingPlayers := totalPlayers - i*5
+		if remainingPlayers%4 == 0 {
+			numGroups = i + remainingPlayers/4
+			break
+		}
+		if remainingPlayers%3 == 0 {
+			numGroups = i + remainingPlayers/3
+			break
+		}
+	}
+
+	if numGroups == 0 {
+		return nil, fmt.Errorf("não é possível dividir %d jogadores em grupos de 3, 4 ou 5", totalPlayers)
+	}
+
+	groups := make([][]int, numGroups)
+	playerIndex := 0
+	for i := 0; i < numGroups; i++ {
+		groupSize := 0
+		if totalPlayers >= 5 {
+			groupSize = 5
+		} else if totalPlayers >= 3 {
+			groupSize = totalPlayers
+		} else {
+			// This should not happen due to the initial check, but as a safeguard:
+			return nil, fmt.Errorf("erro inesperado na distribuição de jogadores")
+		}
+
+		groups[i] = make([]int, groupSize)
+		for j := 0; j < groupSize; j++ {
+			groups[i][j] = playerIDs[playerIndex]
+			playerIndex++
+		}
+		totalPlayers -= groupSize
+	}
+
+	return groups, nil
 }

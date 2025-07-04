@@ -55,11 +55,14 @@ func main() {
 	torneioRepo := repository.NewTorneioRepository(config.DB)
 	esporteRepo := repository.NewEsporteRepository(config.DB)
 
+	grupoRepo := repository.NewGrupoRepository(config.DB)
+
 	// 2. Instanciar Handlers, injetando os repositórios
 	authHandler := handlers.NewAuthHandler(userRepo)
 	userHandler := handlers.NewUsuarioHandler(userRepo)
 	torneioHandler := handlers.NewTorneioHandler(torneioRepo)
 	esporteHandler := handlers.NewEsporteHandler(esporteRepo)
+	grupoHandler := handlers.NewGrupoHandler(grupoRepo) // Adicionado
 
 	router := gin.Default()
 
@@ -72,7 +75,7 @@ func main() {
 	// Adiciona o middleware de tratamento de erros
 	router.Use(middleware.ErrorHandler())
 	// Registra as rotas, passando os handlers e repositórios necessários
-	routes.RegisterRoutes(router, userHandler, torneioHandler, esporteHandler, authHandler, jwtSecret)
+	routes.RegisterRoutes(router, userHandler, torneioHandler, esporteHandler, grupoHandler, authHandler, jwtSecret)
 
 	//Create and configure the MCP server
 	//Provide essential details for the MCP client.
