@@ -16,6 +16,7 @@ func RegisterRoutes(
 	userHandler *handlers.UsuarioHandler,
 	torneioHandler *handlers.TorneioHandler,
 	esporteHandler *handlers.EsporteHandler,
+	grupoHandler *handlers.GrupoHandler, // Adicionado
 	authHandler *handlers.AuthHandler,
 	jwtSecret string,
 ) {
@@ -56,6 +57,7 @@ func RegisterRoutes(
 		torneioRoutes.DELETE("/:id", torneioHandler.DeleteTorneio)
 		torneioRoutes.POST("/:id/inscrever", torneioHandler.InscreverJogador)
 		torneioRoutes.GET("/:id/inscricoes", torneioHandler.ListarInscricoes) // <-- NOVA ROTA
+	torneioRoutes.POST("/:id/grupos", grupoHandler.CriarGrupos)
 	}
 
 	// Rotas de Esportes
