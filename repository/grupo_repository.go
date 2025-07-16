@@ -11,6 +11,7 @@ import (
 // GrupoRepository define a interface para interagir com os dados dos grupos.
 type GrupoRepository interface {
 	CreateGrupos(ctx context.Context, torneioID int, input models.CriarGruposInput) ([]models.GrupoComJogadores, error)
+	GetEstatisticasGrupo(ctx context.Context, grupoID int) ([]models.EstatisticasJogador, error)
 }
 
 // pgGrupoRepository é a implementação concreta para GrupoRepository.
@@ -25,10 +26,14 @@ func NewGrupoRepository(db *pgxpool.Pool) GrupoRepository {
 
 // CreateGrupos cria grupos para um torneio e categoria, distribuindo os jogadores.
 func (r *pgGrupoRepository) CreateGrupos(ctx context.Context, torneioID int, input models.CriarGruposInput) ([]models.GrupoComJogadores, error) {
-	// 1. Buscar todos os jogadores inscritos na categoria especificada do torneio.
+	// 1. Buscar todos os jogadores inscritos na categoria especificada do torneio, ordenados por rating.
 	queryJogadores := `
-		SELECT id_jogador FROM jogadores_torneios
-		WHERE id_torneio = $1 AND id_categoria = $2 AND tipo_modalidade = 'simples'
+		SELECT jt.id_jogador, s.rating
+		FROM jogadores_torneios jt
+		JOIN jogadores j ON jt.id_jogador = j.id
+		JOIN scouts s ON j.id_scout = s.id
+		WHERE jt.id_torneio = $1 AND jt.id_categoria = $2 AND jt.tipo_modalidade = 'simples'
+		ORDER BY s.rating DESC
 	`
 	rows, err := r.db.Query(ctx, queryJogadores, torneioID, input.CategoriaID)
 	if err != nil {
@@ -36,17 +41,17 @@ func (r *pgGrupoRepository) CreateGrupos(ctx context.Context, torneioID int, inp
 	}
 	defer rows.Close()
 
-	var playerIDs []int
+	var rankedPlayers []models.RankedPlayer
 	for rows.Next() {
-		var playerID int
-		if err := rows.Scan(&playerID); err != nil {
-			return nil, fmt.Errorf("falha ao ler ID do jogador: %w", err)
+		var p models.RankedPlayer
+		if err := rows.Scan(&p.ID, &p.Rating); err != nil {
+			return nil, fmt.Errorf("falha ao ler ID e rating do jogador: %w", err)
 		}
-		playerIDs = append(playerIDs, playerID)
+		rankedPlayers = append(rankedPlayers, p)
 	}
 
 	// 2. Distribuir jogadores em grupos.
-	gruposDeJogadores, err := models.DistributePlayers(playerIDs)
+	gruposDeJogadores, err := models.DistributePlayersRanked(rankedPlayers)
 	if err != nil {
 		return nil, err
 	}
@@ -107,4 +112,40 @@ func (r *pgGrupoRepository) CreateGrupos(ctx context.Context, torneioID int, inp
 	}
 
 	return gruposResult, nil
+}
+
+func (r *pgGrupoRepository) GetEstatisticasGrupo(ctx context.Context, grupoID int) ([]models.EstatisticasJogador, error) {
+	query := `
+		SELECT 
+			j.id AS jogador_id,
+			u.nome AS nome_jogador,
+			COALESCE(SUM(CASE WHEN s.vencedor_set = j.id THEN 1 ELSE 0 END), 0) AS sets_ganhos,
+			COALESCE(SUM(s.pontos_jogador1 + s.pontos_jogador2), 0) AS pontos_ganhos
+		FROM grupo_jogadores_torneios g_jt
+		JOIN jogadores_torneios jt ON g_jt.id_jogador_torneio = jt.id
+		JOIN jogadores j ON jt.id_jogador = j.id
+		JOIN usuarios u ON j.id_usuario = u.id
+		LEFT JOIN jogos jg ON jg.id_grupo = g_jt.id_grupo AND (jg.id_jogador_torneio1 = jt.id OR jg.id_jogador_torneio2 = jt.id)
+		LEFT JOIN sets s ON s.id_jogo = jg.id
+		WHERE g_jt.id_grupo = $1
+		GROUP BY j.id, u.nome
+		ORDER BY sets_ganhos DESC, pontos_ganhos DESC;
+	`
+
+	rows, err := r.db.Query(ctx, query, grupoID)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar estatísticas do grupo: %w", err)
+	}
+	defer rows.Close()
+
+	var estatisticas []models.EstatisticasJogador
+	for rows.Next() {
+		var e models.EstatisticasJogador
+		if err := rows.Scan(&e.JogadorID, &e.NomeJogador, &e.SetsGanhos, &e.PontosGanhos); err != nil {
+			return nil, fmt.Errorf("falha ao ler estatísticas do jogador: %w", err)
+		}
+		estatisticas = append(estatisticas, e)
+	}
+
+	return estatisticas, nil
 }

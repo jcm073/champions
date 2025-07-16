@@ -57,7 +57,6 @@ func RegisterRoutes(
 		torneioRoutes.DELETE("/:id", torneioHandler.DeleteTorneio)
 		torneioRoutes.POST("/:id/inscrever", torneioHandler.InscreverJogador)
 		torneioRoutes.GET("/:id/inscricoes", torneioHandler.ListarInscricoes) // <-- NOVA ROTA
-	torneioRoutes.POST("/:id/grupos", grupoHandler.CriarGrupos)
 	}
 
 	// Rotas de Esportes
@@ -65,5 +64,13 @@ func RegisterRoutes(
 	esporteRoutes.Use(authMiddleware.MiddlewareFunc())
 	{
 		esporteRoutes.GET("", esporteHandler.GetEsportes)
+	}
+
+	// Rotas de Grupos
+	grupoRoutes := router.Group("/grupos")
+	grupoRoutes.Use(authMiddleware.MiddlewareFunc())
+	{
+		grupoRoutes.POST("/:id/criar", grupoHandler.CreateGrupos)
+		grupoRoutes.GET("/:id/vencedores", grupoHandler.DefinirVencedoresGrupo)
 	}
 }
