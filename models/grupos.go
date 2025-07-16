@@ -30,54 +30,55 @@ type CriarGruposInput struct {
 	CategoriaID int `json:"id_categoria" validate:"required,gt=0"`
 }
 
+// RankedPlayer armazena o ID e o rating de um jogador.
+type RankedPlayer struct {
+	ID     int
+	Rating int
+}
+
 // Validate executa a validação na estrutura CriarGruposInput.
 func (c *CriarGruposInput) Validate() error {
 	return validation.ValidateStruct(c)
 }
 
-// DistributePlayers distribui os jogadores em grupos de 3 a 5.
-func DistributePlayers(playerIDs []int) ([][]int, error) {
-	totalPlayers := len(playerIDs)
+// DistributePlayersRanked distribui jogadores com base no rating em grupos de 3 a 5.
+func DistributePlayersRanked(players []RankedPlayer) ([][]int, error) {
+	totalPlayers := len(players)
 	if totalPlayers < 3 {
 		return nil, fmt.Errorf("é necessário ter no mínimo 3 jogadores para formar um grupo")
 	}
 
+	// Lógica para determinar o número ideal de grupos
 	numGroups := 0
-	for i := totalPlayers / 5; i >= 0; i-- {
-		remainingPlayers := totalPlayers - i*5
-		if remainingPlayers%4 == 0 {
-			numGroups = i + remainingPlayers/4
-			break
-		}
-		if remainingPlayers%3 == 0 {
-			numGroups = i + remainingPlayers/3
-			break
+	bestNumGroups := 0
+	minRemainder := totalPlayers
+
+	for g := 1; g <= totalPlayers/3; g++ {
+		if totalPlayers/g >= 3 {
+			remainder := totalPlayers % g
+			if remainder < minRemainder {
+				minRemainder = remainder
+				bestNumGroups = g
+			}
 		}
 	}
-
+	numGroups = bestNumGroups
 	if numGroups == 0 {
-		return nil, fmt.Errorf("não é possível dividir %d jogadores em grupos de 3, 4 ou 5", totalPlayers)
+		numGroups = 1 // Fallback para um único grupo se nenhum ideal for encontrado
 	}
 
 	groups := make([][]int, numGroups)
-	playerIndex := 0
-	for i := 0; i < numGroups; i++ {
-		groupSize := 0
-		if totalPlayers >= 5 {
-			groupSize = 5
-		} else if totalPlayers >= 3 {
-			groupSize = totalPlayers
-		} else {
-			// This should not happen due to the initial check, but as a safeguard:
-			return nil, fmt.Errorf("erro inesperado na distribuição de jogadores")
-		}
+	for i := range groups {
+		groups[i] = []int{}
+	}
 
-		groups[i] = make([]int, groupSize)
-		for j := 0; j < groupSize; j++ {
-			groups[i][j] = playerIDs[playerIndex]
-			playerIndex++
+	// Distribuição em serpente
+	for i, player := range players {
+		groupIndex := i % numGroups
+		if (i/numGroups)%2 != 0 { // Inverte a direção em linhas ímpares
+			groupIndex = numGroups - 1 - groupIndex
 		}
-		totalPlayers -= groupSize
+		groups[groupIndex] = append(groups[groupIndex], player.ID)
 	}
 
 	return groups, nil

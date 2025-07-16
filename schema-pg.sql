@@ -258,14 +258,15 @@ CREATE TABLE IF NOT EXISTS jogos (
   eh_final_campeonato BOOLEAN DEFAULT FALSE
 );
 
--- SEÇÃO 19: TABELA DE PLACARES (scores por set)
-CREATE TABLE IF NOT EXISTS placares (
+-- SEÇÃO 19: TABELA DE SETS (scores por set)
+CREATE TABLE IF NOT EXISTS sets (
   id SERIAL PRIMARY KEY,
   id_jogo INT NOT NULL REFERENCES jogos(id) ON DELETE CASCADE,
-  numero_set INT NOT NULL,
-  score_participante1 INT NOT NULL, -- Para simples, ou dupla1
-  score_participante2 INT NOT NULL, -- Para simples, ou dupla2
-  UNIQUE (id_jogo, numero_set) -- Garante um score por set por jogo
+  set_numero INT NOT NULL,
+  pontos_jogador1 INT NOT NULL,
+  pontos_jogador2 INT NOT NULL,
+  vencedor_set INT REFERENCES jogadores(id) ON DELETE SET NULL, -- ID do jogador que venceu o set
+  UNIQUE (id_jogo, set_numero) -- Garante um score por set por jogo
 );
 
 -- SEÇÃO 20: CONSTRAINTS ADICIONAIS (ALTER TABLE)
