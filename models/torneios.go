@@ -70,8 +70,8 @@ type Torneio struct {
 //	@Tags			Torneios
 //	@Param			torneio		body	TorneioInput	true	"Dados do Torneio"
 //	@Param			nome		query	string			false	"Nome do Torneio"
-//	@Param			data_inicio	query	string			false	"Data de Início do Torneio"
-//	@Param			data_fim	query	string			false	"Data de Fim do Torneio"
+//	@Param			inicio	query	string			false	"Data de Início do Torneio"
+//	@Param			fim	query	string			false	"Data de Fim do Torneio"
 //	@Param			id_esporte	query	int				false	"ID do Esporte"
 //	@Param			id_cidade	query	int				false	"ID da Cidade"
 //	@Param			id_estado	query	int				false	"ID do Estado"

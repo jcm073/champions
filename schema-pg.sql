@@ -182,8 +182,8 @@ CREATE TABLE IF NOT EXISTS torneios (
   descricao TEXT,
   quantidade_quadras INT NOT NULL DEFAULT 1,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Adicionada vírgula
-  inicio TIMESTAMP NOT NULL, -- Renomeado de data_inicio
-  fim TIMESTAMP NOT NULL,    -- Renomeado de data_fim
+  data_inicio TIMESTAMP NOT NULL,   
+  data_fim TIMESTAMP NOT NULL,
   id_cidade INT NOT NULL REFERENCES cidades(id) ON DELETE CASCADE, -- Nova coluna
   id_estado INT NOT NULL REFERENCES estados(id) ON DELETE CASCADE, -- Nova coluna
   id_pais INT NOT NULL REFERENCES paises(id) ON DELETE CASCADE,     -- Nova coluna
