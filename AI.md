@@ -1,4 +1,4 @@
-# Diretrizes do Projeto - Gemini
+# Diretrizes do Projeto
 
 Este documento estabelece as convenções, padrões e melhores práticas a serem seguidas no desenvolvimento deste projeto. O objetivo é manter um código limpo, consistente, legível e de fácil manutenção.
 
@@ -143,3 +143,11 @@ func (h *TorneioHandler) CreateTorneio(c *gin.Context) {
     // ... lógica do handler
 }
 ```
+
+## 8. Testes
+
+**Regra de Ouro**: Todo código novo ou alterado **DEVE** ser acompanhado de testes. O objetivo é manter uma cobertura de testes de 100%.
+
+-   **Criação de Testes**: Para cada nova funcionalidade ou correção de bug, crie os testes correspondentes.
+-   **Cobertura**: Utilize as ferramentas de cobertura de testes do Go para garantir que todo o código está sendo testado.
+-   **Execução**: Todos os testes devem passar antes de um merge ser considerado.
