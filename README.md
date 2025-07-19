@@ -1,5 +1,9 @@
 Projeto para gerenciar torneios de esportes em geral.
 
+## Inteligência Artificial
+
+Este projeto utiliza o arquivo [AI.md](./AI.md) como referência padrão para integração e uso de assistentes de IA (ChatGPT, Gemini, Copilot, etc). Consulte esse arquivo para instruções, exemplos e contexto do projeto.
+
 # Configurações de conexão com o banco de dados Postgresql usadas pela aplicação.
 # As variáveis abaixo são carregadas automaticamente pelo Go usando o pacote godotenv.
 # Certifique-se de que os valores estejam corretos para o seu ambiente.
